@@ -31,10 +31,11 @@ class _SplashScreenState extends State<SplashScreen>
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const OnboardingScreen(
-            backgroundImageAsset: 'assets/images/onboarding_1.png',
-          ),
-          transitionsBuilder: (_, animation, __, child) {
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const OnboardingScreen(
+                backgroundImageAsset: 'assets/images/onboarding_1.png',
+              ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final curved = CurvedAnimation(
               parent: animation,
               curve: Curves.easeOutCubic,

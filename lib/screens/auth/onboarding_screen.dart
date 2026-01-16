@@ -10,29 +10,30 @@ class OnboardingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttonStyle = OutlinedButton.styleFrom(
-      foregroundColor: AppColors.gold,
-      side: const BorderSide(color: AppColors.gold),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(30),
-      ),
-    ).copyWith(
-      overlayColor: WidgetStateProperty.resolveWith<Color?>(
-        (states) => states.contains(WidgetState.pressed)
-            ? AppColors.gold.withValues(alpha: 0.2)
-            : null,
-      ),
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>(
-        (states) => states.contains(WidgetState.pressed)
-            ? AppColors.gold
-            : Colors.transparent,
-      ),
-      foregroundColor: WidgetStateProperty.resolveWith<Color?>(
-        (states) => states.contains(WidgetState.pressed)
-            ? AppColors.midnight
-            : AppColors.gold,
-      ),
-    );
+    final buttonStyle =
+        OutlinedButton.styleFrom(
+          foregroundColor: AppColors.gold,
+          side: const BorderSide(color: AppColors.gold),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ).copyWith(
+          overlayColor: WidgetStateProperty.resolveWith<Color?>(
+            (states) => states.contains(WidgetState.pressed)
+                ? AppColors.gold.withValues(alpha: 0.2)
+                : null,
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith<Color?>(
+            (states) => states.contains(WidgetState.pressed)
+                ? AppColors.gold
+                : Colors.transparent,
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith<Color?>(
+            (states) => states.contains(WidgetState.pressed)
+                ? AppColors.midnight
+                : AppColors.gold,
+          ),
+        );
 
     return Scaffold(
       backgroundColor: AppColors.midnight,
@@ -106,15 +107,15 @@ class OnboardingScreen extends StatelessWidget {
                       fontFamily: 'Inter',
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const Spacer(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
                       _Indicator(active: true, isWide: true),
                       SizedBox(width: 10),
-                      _Indicator(active: false),
+                      _Indicator(active: false, isWide: false),
                       SizedBox(width: 10),
-                      _Indicator(active: false),
+                      _Indicator(active: false, isWide: false),
                     ],
                   ),
                   const SizedBox(height: 18),
@@ -125,25 +126,29 @@ class OnboardingScreen extends StatelessWidget {
                       style: buttonStyle,
                       onPressed: () => Navigator.of(context).push(
                         PageRouteBuilder(
-                          pageBuilder: (_, __, ___) => const OnboardingScreenTwo(
-                            illustrationAsset: 'assets/images/onboarding_2.png',
-                          ),
-                          transitionsBuilder: (_, animation, __, child) {
-                            final curved = CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeOutCubic,
-                            );
-                            return FadeTransition(
-                              opacity: curved,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.04),
-                                  end: Offset.zero,
-                                ).animate(curved),
-                                child: child,
-                              ),
-                            );
-                          },
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  const OnboardingScreenTwo(
+                                    illustrationAsset:
+                                        'assets/images/onboarding_2.png',
+                                  ),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                                final curved = CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeOutCubic,
+                                );
+                                return FadeTransition(
+                                  opacity: curved,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, 0.04),
+                                      end: Offset.zero,
+                                    ).animate(curved),
+                                    child: child,
+                                  ),
+                                );
+                              },
                         ),
                       ),
                       child: Row(
@@ -163,6 +168,7 @@ class OnboardingScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 6),
                 ],
               ),
             ),
@@ -174,7 +180,7 @@ class OnboardingScreen extends StatelessWidget {
 }
 
 class _Indicator extends StatelessWidget {
-  const _Indicator({required this.active, this.isWide = false});
+  const _Indicator({required this.active, required this.isWide});
 
   final bool active;
   final bool isWide;
@@ -192,16 +198,9 @@ class _Indicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(999),
-        border: active
-            ? null
-            : Border.all(color: const Color(0x33F5F5F5)),
+        border: active ? null : Border.all(color: const Color(0x33F5F5F5)),
         boxShadow: active
-            ? [
-                const BoxShadow(
-                  color: Color(0x80D4AF37),
-                  blurRadius: 10,
-                ),
-              ]
+            ? [const BoxShadow(color: Color(0x80D4AF37), blurRadius: 10)]
             : null,
       ),
     );

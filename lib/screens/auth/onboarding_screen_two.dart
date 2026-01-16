@@ -9,29 +9,30 @@ class OnboardingScreenTwo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttonStyle = OutlinedButton.styleFrom(
-      foregroundColor: AppColors.gold,
-      side: const BorderSide(color: AppColors.gold),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(30),
-      ),
-    ).copyWith(
-      overlayColor: WidgetStateProperty.resolveWith<Color?>(
-        (states) => states.contains(WidgetState.pressed)
-            ? AppColors.gold.withValues(alpha: 0.2)
-            : null,
-      ),
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>(
-        (states) => states.contains(WidgetState.pressed)
-            ? AppColors.gold
-            : Colors.transparent,
-      ),
-      foregroundColor: WidgetStateProperty.resolveWith<Color?>(
-        (states) => states.contains(WidgetState.pressed)
-            ? AppColors.midnight
-            : AppColors.gold,
-      ),
-    );
+    final buttonStyle =
+        OutlinedButton.styleFrom(
+          foregroundColor: AppColors.gold,
+          side: const BorderSide(color: AppColors.gold),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ).copyWith(
+          overlayColor: WidgetStateProperty.resolveWith<Color?>(
+            (states) => states.contains(WidgetState.pressed)
+                ? AppColors.gold.withValues(alpha: 0.2)
+                : null,
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith<Color?>(
+            (states) => states.contains(WidgetState.pressed)
+                ? AppColors.gold
+                : Colors.transparent,
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith<Color?>(
+            (states) => states.contains(WidgetState.pressed)
+                ? AppColors.midnight
+                : AppColors.gold,
+          ),
+        );
 
     return Scaffold(
       backgroundColor: AppColors.midnight,
@@ -85,25 +86,28 @@ class OnboardingScreenTwo extends StatelessWidget {
                   style: buttonStyle,
                   onPressed: () => Navigator.of(context).push(
                     PageRouteBuilder(
-                      pageBuilder: (_, __, ___) => const OnboardingScreenThree(
-                        backgroundImageAsset: 'assets/images/onboarding_3.png',
-                      ),
-                      transitionsBuilder: (_, animation, __, child) {
-                        final curved = CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeOutCubic,
-                        );
-                        return FadeTransition(
-                          opacity: curved,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.04),
-                              end: Offset.zero,
-                            ).animate(curved),
-                            child: child,
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const OnboardingScreenThree(
+                            backgroundImageAsset:
+                                'assets/images/onboarding_3.png',
                           ),
-                        );
-                      },
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                            final curved = CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            );
+                            return FadeTransition(
+                              opacity: curved,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.04),
+                                  end: Offset.zero,
+                                ).animate(curved),
+                                child: child,
+                              ),
+                            );
+                          },
                     ),
                   ),
                   child: Row(
@@ -224,16 +228,9 @@ class _Indicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(999),
-        border: active
-            ? null
-            : Border.all(color: const Color(0x33F5F5F5)),
+        border: active ? null : Border.all(color: const Color(0x33F5F5F5)),
         boxShadow: active
-            ? [
-                const BoxShadow(
-                  color: Color(0x80D4AF37),
-                  blurRadius: 10,
-                ),
-              ]
+            ? [const BoxShadow(color: Color(0x80D4AF37), blurRadius: 10)]
             : null,
       ),
     );

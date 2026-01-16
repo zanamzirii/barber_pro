@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
+import 'welcome_screen.dart';
 
 class OnboardingScreenThree extends StatelessWidget {
   const OnboardingScreenThree({super.key, this.backgroundImageAsset});
@@ -108,7 +109,33 @@ class OnboardingScreenThree extends StatelessWidget {
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      onPressed: () {},
+                      onPressed: () => Navigator.of(context).push(
+                        PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  const WelcomeScreen(
+                                    backgroundImageAsset:
+                                        'assets/images/welcome_screen.png',
+                                  ),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                                final curved = CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeOutCubic,
+                                );
+                                return FadeTransition(
+                                  opacity: curved,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, 0.04),
+                                      end: Offset.zero,
+                                    ).animate(curved),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                        ),
+                      ),
                       child: const Text(
                         'Get Started',
                         style: TextStyle(
@@ -149,16 +176,9 @@ class _Indicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(999),
-        border: active
-            ? null
-            : Border.all(color: const Color(0x33F5F5F5)),
+        border: active ? null : Border.all(color: const Color(0x33F5F5F5)),
         boxShadow: active
-            ? [
-                const BoxShadow(
-                  color: Color(0x80D4AF37),
-                  blurRadius: 10,
-                ),
-              ]
+            ? [const BoxShadow(color: Color(0x80D4AF37), blurRadius: 10)]
             : null,
       ),
     );
