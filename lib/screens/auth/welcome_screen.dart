@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import 'login_screen.dart';
+import 'register_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key, this.backgroundImageAsset});
@@ -9,6 +10,15 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void showComingSoon(String label) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$label sign-in is coming soon'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.midnight,
       body: Stack(
@@ -98,29 +108,27 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       onPressed: () => Navigator.of(context).push(
                         PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  const LoginScreen(
-                                    headerImageAsset:
-                                        'assets/images/login_screen.png',
-                                  ),
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                              const LoginScreen(
+                            headerImageAsset: 'assets/images/login_screen.png',
+                          ),
                           transitionsBuilder:
                               (context, animation, secondaryAnimation, child) {
-                                final curved = CurvedAnimation(
-                                  parent: animation,
-                                  curve: Curves.easeOutCubic,
-                                );
-                                return FadeTransition(
-                                  opacity: curved,
-                                  child: SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(0, 0.04),
-                                      end: Offset.zero,
-                                    ).animate(curved),
-                                    child: child,
-                                  ),
-                                );
-                              },
+                            final curved = CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            );
+                            return FadeTransition(
+                              opacity: curved,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.04),
+                                  end: Offset.zero,
+                                ).animate(curved),
+                                child: child,
+                              ),
+                            );
+                          },
                         ),
                       ),
                       child: const Text('LOGIN'),
@@ -146,7 +154,29 @@ class WelcomeScreen extends StatelessWidget {
                           letterSpacing: 1.4,
                         ),
                       ),
-                      onPressed: () {},
+                      onPressed: () => Navigator.of(context).push(
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                              const RegisterScreen(),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            final curved = CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            );
+                            return FadeTransition(
+                              opacity: curved,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.04),
+                                  end: Offset.zero,
+                                ).animate(curved),
+                                child: child,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                       child: const Text('CREATE ACCOUNT'),
                     ),
                   ),
@@ -184,12 +214,12 @@ class WelcomeScreen extends StatelessWidget {
                     children: [
                       _CircleIconButton(
                         icon: Icons.mail_outline,
-                        onPressed: () {},
+                        onPressed: () => showComingSoon('Email'),
                       ),
                       const SizedBox(width: 16),
                       _CircleIconButton(
                         icon: Icons.phone_iphone,
-                        onPressed: () {},
+                        onPressed: () => showComingSoon('Phone'),
                       ),
                     ],
                   ),

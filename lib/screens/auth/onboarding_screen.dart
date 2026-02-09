@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import 'onboarding_screen_two.dart';
 
@@ -74,7 +74,7 @@ class OnboardingScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Spacer(),
+                  const Spacer(flex: 2),
                   RichText(
                     text: const TextSpan(
                       style: TextStyle(
@@ -107,7 +107,7 @@ class OnboardingScreen extends StatelessWidget {
                       fontFamily: 'Inter',
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 50),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
