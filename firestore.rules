@@ -1,13 +1,122 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // User profile: only owner can read/write own document.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userData(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data;
+    }
+
+    function userRole() {
+      return isSignedIn() ? userData(request.auth.uid).role : null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && userRole() == 'superadmin';
+    }
+
+    function ownerShopId() {
+      return isSignedIn() ? userData(request.auth.uid).shopId : null;
+    }
+
+    function isBarberForShop(shopId) {
+      return isSignedIn() &&
+        userRole() == 'barber' &&
+        ownerShopId() == shopId;
+    }
+
+    function managesShop(shopId) {
+      return isSignedIn() && (
+        isSuperAdmin() ||
+        request.auth.uid == shopId ||
+        (userRole() == 'owner' && ownerShopId() == shopId)
+      );
+    }
+
     match /users/{userId} {
       allow create: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.uid == request.auth.uid;
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == userId;
+      allow read, update, delete: if isSignedIn()
+        && (request.auth.uid == userId || isSuperAdmin());
+    }
+
+    match /shops/{shopId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if managesShop(shopId);
+
+      match /barbers/{barberId} {
+        allow read: if isSignedIn();
+        allow create: if managesShop(shopId) || (
+          isBarberForShop(shopId) &&
+          request.resource.data.barberId == request.auth.uid &&
+          request.resource.data.barberUserId == request.auth.uid
+        );
+        allow update: if managesShop(shopId) || (
+          isBarberForShop(shopId) &&
+          resource.data.barberId == request.auth.uid &&
+          request.resource.data.barberId == request.auth.uid &&
+          request.resource.data.barberUserId == request.auth.uid
+        );
+        allow delete: if managesShop(shopId);
+      }
+
+      match /services/{serviceId} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if managesShop(shopId);
+      }
+    }
+
+    match /barber_invites/{inviteId} {
+      allow create: if isSignedIn() && (
+        isSuperAdmin() ||
+        request.resource.data.ownerId == request.auth.uid ||
+        managesShop(request.resource.data.shopId)
+      );
+
+      // Public read is enabled for invite-code lookup during onboarding.
+      allow read: if true;
+
+      allow update: if isSignedIn() && (
+        isSuperAdmin() ||
+        resource.data.ownerId == request.auth.uid ||
+        managesShop(resource.data.shopId) ||
+        request.auth.token.email == resource.data.email
+      );
+
+      allow delete: if isSignedIn() &&
+        (
+          isSuperAdmin() ||
+          resource.data.ownerId == request.auth.uid ||
+          managesShop(resource.data.shopId)
+        );
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if isSignedIn() && (
+        isSuperAdmin() ||
+        resource.data.customerId == request.auth.uid ||
+        resource.data.barberId == request.auth.uid ||
+        managesShop(resource.data.shopId)
+      );
+
+      allow create: if isSignedIn() && (
+        isSuperAdmin() ||
+        request.resource.data.customerId == request.auth.uid ||
+        managesShop(request.resource.data.shopId)
+      );
+
+      allow update, delete: if isSignedIn() && (
+        isSuperAdmin() ||
+        managesShop(resource.data.shopId) ||
+        resource.data.barberId == request.auth.uid ||
+        (
+          resource.data.customerId == request.auth.uid &&
+          resource.data.status == 'pending'
+        )
+      );
     }
 
     // Deny everything else by default.

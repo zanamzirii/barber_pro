@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../theme/app_colors.dart';
-import '../auth/welcome_screen.dart';
+import '../../app_shell.dart';
+import 'book_appointment_screen.dart';
+import 'my_appointments_screen.dart';
 
 void _showHomePlaceholder(BuildContext context, String label) {
   ScaffoldMessenger.of(context).showSnackBar(
@@ -13,43 +16,347 @@ void _showHomePlaceholder(BuildContext context, String label) {
 }
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.showBottomNav = true});
+
+  final bool showBottomNav;
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF05070A),
+        body: Center(child: Text('Please log in again')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF05070A),
-      body: Stack(
-        children: [
-          const _SilkyBackground(),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  _HomeHeader(),
-                  SizedBox(height: 18),
-                  _NextSessionCard(),
-                  SizedBox(height: 22),
-                  _QuickActions(),
-                  SizedBox(height: 28),
-                  _AvailableToday(),
-                  SizedBox(height: 28),
-                  _PremiumPackages(),
-                  SizedBox(height: 28),
-                  _TopBarbers(),
-                  SizedBox(height: 28),
-                  _EliteStatusCard(),
-                  SizedBox(height: 28),
-                  _EditorialSection(),
-                  SizedBox(height: 24),
-                ],
+      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .snapshots(),
+        builder: (context, userSnapshot) {
+          final selectedShopId =
+              (userSnapshot.data?.data()?['selectedShopId'] as String?)?.trim();
+
+          return Stack(
+            children: [
+              const _SilkyBackground(),
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 120),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _HomeHeader(),
+                      const SizedBox(height: 12),
+                      _BranchSelectorCard(
+                        userId: user.uid,
+                        selectedShopId: selectedShopId,
+                      ),
+                      const SizedBox(height: 12),
+                      _SelectedBranchOverview(shopId: selectedShopId),
+                      const SizedBox(height: 18),
+                      _LiveBookingPanel(selectedShopId: selectedShopId),
+                      const SizedBox(height: 22),
+                      const _NextSessionCard(),
+                      const SizedBox(height: 22),
+                      const _QuickActions(),
+                      const SizedBox(height: 28),
+                      const _AvailableToday(),
+                      const SizedBox(height: 28),
+                      const _PremiumPackages(),
+                      const SizedBox(height: 28),
+                      const _TopBarbers(),
+                      const SizedBox(height: 28),
+                      const _EliteStatusCard(),
+                      const SizedBox(height: 28),
+                      const _EditorialSection(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+              if (showBottomNav) const _BottomNav(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _LiveBookingPanel extends StatefulWidget {
+  const _LiveBookingPanel({required this.selectedShopId});
+
+  final String? selectedShopId;
+
+  @override
+  State<_LiveBookingPanel> createState() => _LiveBookingPanelState();
+}
+
+class _LiveBookingPanelState extends State<_LiveBookingPanel> {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF121620).withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'LIVE BOOKING',
+              style: TextStyle(
+                fontSize: 10,
+                letterSpacing: 2.2,
+                fontWeight: FontWeight.w700,
+                color: AppColors.gold,
               ),
             ),
-          ),
-          const _BottomNav(),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              widget.selectedShopId == null || widget.selectedShopId!.isEmpty
+                  ? 'Select a branch first, then book.'
+                  : 'Booking for selected branch: ${widget.selectedShopId}',
+              style: const TextStyle(color: AppColors.muted, fontSize: 12),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.gold,
+                  foregroundColor: const Color(0xFF05070A),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  if (widget.selectedShopId == null ||
+                      widget.selectedShopId!.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please select a branch first'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => BookAppointmentScreen(
+                        initialShopId: widget.selectedShopId,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Book Appointment'),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.gold,
+                  side: BorderSide(
+                    color: AppColors.gold.withValues(alpha: 0.4),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const MyAppointmentsScreen(),
+                    ),
+                  );
+                },
+                child: const Text('My Appointments'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BranchSelectorCard extends StatelessWidget {
+  const _BranchSelectorCard({
+    required this.userId,
+    required this.selectedShopId,
+  });
+
+  final String userId;
+  final String? selectedShopId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF121620).withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+        ),
+        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance.collection('shops').snapshots(),
+          builder: (context, snapshot) {
+            final shops = snapshot.data?.docs ?? [];
+            final hasSelected =
+                selectedShopId != null && selectedShopId!.isNotEmpty;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'SELECT BRANCH',
+                  style: TextStyle(
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (!hasSelected)
+                  const Text(
+                    'No branch selected yet.',
+                    style: TextStyle(color: AppColors.muted),
+                  ),
+                DropdownButtonFormField<String>(
+                  initialValue: hasSelected ? selectedShopId : null,
+                  decoration: const InputDecoration(hintText: 'Choose branch'),
+                  items: shops.map((doc) {
+                    final data = doc.data();
+                    final title = (data['name'] as String?)?.trim();
+                    final label = (title == null || title.isEmpty)
+                        ? doc.id
+                        : title;
+                    return DropdownMenuItem<String>(
+                      value: doc.id,
+                      child: Text(label),
+                    );
+                  }).toList(),
+                  onChanged: (value) async {
+                    if (value == null) return;
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(userId)
+                        .set({
+                          'selectedShopId': value,
+                          'updatedAt': FieldValue.serverTimestamp(),
+                        }, SetOptions(merge: true));
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectedBranchOverview extends StatelessWidget {
+  const _SelectedBranchOverview({required this.shopId});
+
+  final String? shopId;
+
+  @override
+  Widget build(BuildContext context) {
+    if (shopId == null || shopId!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF121620).withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('shops')
+                  .doc(shopId)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                final data = snapshot.data?.data();
+                final name = (data?['name'] as String?)?.trim();
+                return Text(
+                  name == null || name.isEmpty
+                      ? 'Branch: $shopId'
+                      : 'Branch: $name',
+                  style: const TextStyle(
+                    color: AppColors.text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: FirebaseFirestore.instance
+                        .collection('shops')
+                        .doc(shopId)
+                        .collection('barbers')
+                        .where('isActive', isEqualTo: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      final count = snapshot.data?.docs.length ?? 0;
+                      return Text(
+                        'Active Barbers: $count',
+                        style: const TextStyle(color: AppColors.muted),
+                      );
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: FirebaseFirestore.instance
+                        .collection('shops')
+                        .doc(shopId)
+                        .collection('services')
+                        .where('isActive', isEqualTo: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      final count = snapshot.data?.docs.length ?? 0;
+                      return Text(
+                        'Active Services: $count',
+                        style: const TextStyle(color: AppColors.muted),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -138,29 +445,7 @@ class _HomeHeader extends StatelessWidget {
                   await FirebaseAuth.instance.signOut();
                   if (!context.mounted) return;
                   Navigator.of(context).pushAndRemoveUntil(
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) =>
-                          const WelcomeScreen(
-                            backgroundImageAsset: 'assets/images/welcome_screen.png',
-                          ),
-                      transitionsBuilder:
-                          (context, animation, secondaryAnimation, child) {
-                            final curved = CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeOutCubic,
-                            );
-                            return FadeTransition(
-                              opacity: curved,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.04),
-                                  end: Offset.zero,
-                                ).animate(curved),
-                                child: child,
-                              ),
-                            );
-                          },
-                    ),
+                    MaterialPageRoute(builder: (_) => const AppShell()),
                     (route) => false,
                   );
                 },

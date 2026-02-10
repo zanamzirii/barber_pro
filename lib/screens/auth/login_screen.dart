@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../customer/home_screen.dart';
+import '../../app_shell.dart';
 import '../../theme/app_colors.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.of(context).pushAndRemoveUntil(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomeScreen(),
+            const AppShell(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final curved = CurvedAnimation(
             parent: animation,
@@ -571,6 +571,7 @@ class _LuxTextField extends StatelessWidget {
     );
   }
 }
+
 
 
 
