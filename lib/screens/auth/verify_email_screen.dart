@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_colors.dart';
-import '../customer/home_screen.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   const VerifyEmailScreen({super.key, this.email = 'user@example.com'});
@@ -15,12 +15,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   static const int _cooldownSeconds = 45;
   int _remainingSeconds = 0;
 
-  void _startCooldown() {
+  Future<void> _startCooldown() async {
     if (_remainingSeconds > 0) return;
     setState(() {
       _remainingSeconds = _cooldownSeconds;
     });
-    Future.doWhile(() async {
+    await Future.doWhile(() async {
       if (!mounted) return false;
       await Future<void>.delayed(const Duration(seconds: 1));
       if (!mounted) return false;
@@ -29,6 +29,69 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       });
       return _remainingSeconds > 0;
     });
+  }
+
+  Future<void> _handleResendVerification() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session expired. Please log in again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await user.sendEmailVerification();
+      if (!mounted) return;
+      _startCooldown();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Verification email sent'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Could not resend verification email'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleContinue() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session expired. Please log in again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    await user.reload();
+    final refreshedUser = FirebaseAuth.instance.currentUser;
+    if (!mounted) return;
+
+    if (refreshedUser?.emailVerified == true) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Email is not verified yet. Please check inbox.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -161,7 +224,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     ),
                   ),
                   const Spacer(),
-
                   const SizedBox(height: 18),
                   Column(
                     children: [
@@ -171,7 +233,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       ),
                       const SizedBox(height: 6),
                       TextButton(
-                        onPressed: isCooldown ? null : _startCooldown,
+                        onPressed: isCooldown
+                            ? null
+                            : () => _handleResendVerification(),
                         child: Text(
                           isCooldown
                               ? 'Resend available in ${_remainingSeconds}s'
@@ -217,37 +281,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        onPressed: () {
-                          Navigator.of(context).pushReplacement(
-                            PageRouteBuilder(
-                              pageBuilder:
-                                  (context, animation, secondaryAnimation) =>
-                                      const HomeScreen(),
-                              transitionsBuilder:
-                                  (
-                                    context,
-                                    animation,
-                                    secondaryAnimation,
-                                    child,
-                                  ) {
-                                    final curved = CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeOutCubic,
-                                    );
-                                    return FadeTransition(
-                                      opacity: curved,
-                                      child: SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: const Offset(0, 0.04),
-                                          end: Offset.zero,
-                                        ).animate(curved),
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                            ),
-                          );
-                        },
+                        onPressed: _handleContinue,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
@@ -280,3 +314,4 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     );
   }
 }
+

@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_colors.dart';
 import 'forgot_password_confirmation_screen.dart';
 import 'login_screen.dart';
@@ -30,6 +31,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return null;
   }
 
+  String _mapAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Email address is not valid';
+      case 'user-not-found':
+        return 'No account found for this email';
+      case 'too-many-requests':
+        return 'Too many attempts. Try again later';
+      case 'network-request-failed':
+        return 'Network error. Check internet, VPN, and phone date/time';
+      default:
+        return '[${e.code}] ${e.message ?? 'Could not send reset email'}';
+    }
+  }
+
   Future<void> _handleSend() async {
     FocusScope.of(context).unfocus();
     setState(() {
@@ -43,10 +59,37 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _isSending = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 900));
+    final email = _emailController.text.trim();
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSending = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_mapAuthError(e)),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSending = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong. Please try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     if (!mounted) return;
 
-    final email = _emailController.text.trim();
     setState(() {
       _isSending = false;
     });

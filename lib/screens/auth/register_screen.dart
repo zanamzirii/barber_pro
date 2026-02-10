@@ -1,4 +1,6 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_colors.dart';
 import 'login_screen.dart';
 import 'verify_email_screen.dart';
@@ -81,7 +83,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _isCreating = true;
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 900));
+    try {
+      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      await credential.user?.updateDisplayName(_nameController.text.trim());
+      await credential.user?.sendEmailVerification();
+
+      final user = credential.user;
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'fullName': _nameController.text.trim(),
+          'email': user.email ?? _emailController.text.trim(),
+          'role': 'customer',
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isCreating = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_mapAuthError(e)),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isCreating = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong. Please try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     if (!mounted) return;
 
     setState(() {
@@ -110,6 +156,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
         },
       ),
     );
+  }
+
+  String _mapAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return 'This email is already used';
+      case 'invalid-email':
+        return 'Email address is not valid';
+      case 'weak-password':
+        return 'Password is too weak';
+      case 'operation-not-allowed':
+        return 'Email/password sign up is not enabled in Firebase';
+      case 'network-request-failed':
+        return 'Network error. Check internet, VPN, and phone date/time';
+      default:
+        return '[${e.code}] ${e.message ?? 'Sign up failed. Please try again'}';
+    }
   }
 
   @override
@@ -488,3 +551,6 @@ class _LuxTextField extends StatelessWidget {
     );
   }
 }
+
+
+

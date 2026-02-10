@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../customer/home_screen.dart';
 import '../../theme/app_colors.dart';
 import 'forgot_password_screen.dart';
@@ -59,14 +60,43 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoggingIn = true;
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 700));
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoggingIn = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_mapAuthError(e)),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoggingIn = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong. Please try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     if (!mounted) return;
 
     setState(() {
       _isLoggingIn = false;
     });
-
-    Navigator.of(context).pushReplacement(
+    Navigator.of(context).pushAndRemoveUntil(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
             const HomeScreen(),
@@ -87,9 +117,28 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         },
       ),
+      (route) => false,
     );
   }
 
+  String _mapAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Email address is not valid';
+      case 'invalid-credential':
+      case 'wrong-password':
+      case 'user-not-found':
+        return 'Invalid email or password';
+      case 'user-disabled':
+        return 'This account is disabled';
+      case 'too-many-requests':
+        return 'Too many attempts. Try again later';
+      case 'network-request-failed':
+        return 'Network error. Check internet, VPN, and phone date/time';
+      default:
+        return '[${e.code}] ${e.message ?? 'Login failed. Please try again'}';
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
@@ -522,3 +571,8 @@ class _LuxTextField extends StatelessWidget {
     );
   }
 }
+
+
+
+
+

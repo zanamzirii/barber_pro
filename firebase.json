@@ -1,0 +1,29 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "barber-pro-new",
+          "appId": "1:285659528603:android:7833e07c1c367284eab53e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "barber-pro-new",
+          "configurations": {
+            "android": "1:285659528603:android:7833e07c1c367284eab53e",
+            "ios": "1:285659528603:ios:9530157081589180eab53e",
+            "macos": "1:285659528603:ios:9530157081589180eab53e",
+            "web": "1:285659528603:web:51f58f629209a706eab53e",
+            "windows": "1:285659528603:web:624afce0cd3fbfc3eab53e"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

@@ -7,9 +7,11 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({
     super.key,
     this.logoAsset = 'assets/images/splash_logo.png',
+    this.autoNavigate = true,
   });
 
   final String? logoAsset;
+  final bool autoNavigate;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -28,33 +30,36 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(seconds: 3),
     )..forward();
 
-    _navigationTimer = Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const OnboardingScreen(
-                backgroundImageAsset: 'assets/images/onboarding_1.png',
-              ),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            final curved = CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutCubic,
-            );
-            return FadeTransition(
-              opacity: curved,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.06),
-                  end: Offset.zero,
-                ).animate(curved),
-                child: child,
-              ),
-            );
-          },
-        ),
-      );
-    });
+    if (widget.autoNavigate) {
+      _navigationTimer = Timer(const Duration(seconds: 3), () {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const OnboardingScreen(
+                  backgroundImageAsset: 'assets/images/onboarding_1.png',
+                ),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  final curved = CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  );
+                  return FadeTransition(
+                    opacity: curved,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.06),
+                        end: Offset.zero,
+                      ).animate(curved),
+                      child: child,
+                    ),
+                  );
+                },
+          ),
+        );
+      });
+    }
   }
 
   @override

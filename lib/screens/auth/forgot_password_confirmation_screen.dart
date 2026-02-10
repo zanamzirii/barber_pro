@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_colors.dart';
 import 'login_screen.dart';
 
@@ -24,7 +25,35 @@ class _ForgotPasswordConfirmationScreenState
     setState(() {
       _isResending = true;
     });
-    await Future<void>.delayed(const Duration(milliseconds: 1200));
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: widget.email);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isResending = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_mapAuthError(e)),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isResending = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong. Please try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     if (!mounted) return;
     setState(() {
       _isResending = false;
@@ -35,6 +64,21 @@ class _ForgotPasswordConfirmationScreenState
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  String _mapAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Email address is not valid';
+      case 'user-not-found':
+        return 'No account found for this email';
+      case 'too-many-requests':
+        return 'Too many attempts. Try again later';
+      case 'network-request-failed':
+        return 'Network error. Check internet, VPN, and phone date/time';
+      default:
+        return '[${e.code}] ${e.message ?? 'Could not resend reset email'}';
+    }
   }
 
   @override
@@ -66,7 +110,7 @@ class _ForgotPasswordConfirmationScreenState
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    'We’ve sent a password reset link to your\nregistered email address. Please check your\ninbox (and spam folder).',
+                    "We've sent a password reset link to your\nregistered email address. Please check your\ninbox (and spam folder).",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15,
@@ -247,3 +291,4 @@ class _BackdropGlow extends StatelessWidget {
     );
   }
 }
+

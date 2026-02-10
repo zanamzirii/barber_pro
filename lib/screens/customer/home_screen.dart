@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_colors.dart';
+import '../auth/welcome_screen.dart';
 
 void _showHomePlaceholder(BuildContext context, String label) {
   ScaffoldMessenger.of(context).showSnackBar(
@@ -130,6 +132,40 @@ class _HomeHeader extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+              IconButton(
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (!context.mounted) return;
+                  Navigator.of(context).pushAndRemoveUntil(
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const WelcomeScreen(
+                            backgroundImageAsset: 'assets/images/welcome_screen.png',
+                          ),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                            final curved = CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            );
+                            return FadeTransition(
+                              opacity: curved,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.04),
+                                  end: Offset.zero,
+                                ).animate(curved),
+                                child: child,
+                              ),
+                            );
+                          },
+                    ),
+                    (route) => false,
+                  );
+                },
+                tooltip: 'Logout',
+                icon: const Icon(Icons.logout, color: AppColors.gold),
               ),
               const SizedBox(width: 6),
               Container(
