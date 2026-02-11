@@ -165,6 +165,8 @@ class _BarberInviteRegisterScreenState
         'fullName': fullName,
         'email': email,
         'phone': phone,
+        'roles': FieldValue.arrayUnion(<String>['customer', 'barber']),
+        'activeRole': 'barber',
         'role': 'barber',
         'shopId': shopId,
         'ownerId': ownerId,

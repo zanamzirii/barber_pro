@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_colors.dart';
@@ -84,10 +84,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
 
       await credential.user?.updateDisplayName(_nameController.text.trim());
       await credential.user?.sendEmailVerification();
@@ -98,6 +99,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'uid': user.uid,
           'fullName': _nameController.text.trim(),
           'email': user.email ?? _emailController.text.trim(),
+          'roles': <String>['customer'],
+          'activeRole': 'customer',
           'role': 'customer',
           'createdAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
@@ -183,267 +186,254 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: Form(
-                    key: _formKey,
-                    autovalidateMode: _submitted
-                        ? AutovalidateMode.onUserInteraction
-                        : AutovalidateMode.disabled,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            key: _formKey,
+            autovalidateMode: _submitted
+                ? AutovalidateMode.onUserInteraction
+                : AutovalidateMode.disabled,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new,
+                          size: 18,
+                          color: AppColors.text,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Center(
+                  child: RichText(
+                    textAlign: TextAlign.center,
+                    text: const TextSpan(
+                      style: TextStyle(
+                        fontSize: 32,
+                        height: 1.15,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'PlayfairDisplay',
+                      ),
                       children: [
-                        Row(
-                          children: [
-                            InkWell(
-                              onTap: () => Navigator.pop(context),
-                              borderRadius: BorderRadius.circular(999),
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.08),
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_back_ios_new,
-                                  size: 18,
-                                  color: AppColors.text,
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                          ],
+                        TextSpan(
+                          text: 'Create an ',
+                          style: TextStyle(color: AppColors.text),
                         ),
-                        const SizedBox(height: 24),
-                        Center(
-                          child: RichText(
-                            textAlign: TextAlign.center,
-                            text: const TextSpan(
-                              style: TextStyle(
-                                fontSize: 32,
-                                height: 1.15,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'PlayfairDisplay',
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: 'Create an ',
-                                  style: TextStyle(color: AppColors.text),
-                                ),
-                                TextSpan(
-                                  text: 'Account',
-                                  style: TextStyle(color: AppColors.gold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Center(
-                          child: Text(
-                            'Enter your details to create your account.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 13,
-                              height: 1.5,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                        const _FieldLabel(text: 'Full Name'),
-                        const SizedBox(height: 8),
-                        _LuxTextField(
-                          hintText: 'Ex. Michael Jordan',
-                          icon: Icons.person_outline,
-                          controller: _nameController,
-                          textInputAction: TextInputAction.next,
-                          validator: _validateName,
-                        ),
-                        const SizedBox(height: 14),
-                        const _FieldLabel(text: 'Email Address'),
-                        const SizedBox(height: 8),
-                        _LuxTextField(
-                          hintText: 'michael@example.com',
-                          icon: Icons.mail_outline,
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          textCapitalization: TextCapitalization.none,
-                          validator: _validateEmail,
-                        ),
-                        const SizedBox(height: 14),
-                        const _FieldLabel(text: 'Password'),
-                        const SizedBox(height: 8),
-                        _LuxTextField(
-                          hintText: '••••••••',
-                          icon: Icons.lock_outline,
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.next,
-                          validator: _validatePassword,
-                          onChanged: (_) {
-                            if (_confirmController.text.isNotEmpty) {
-                              _formKey.currentState?.validate();
-                            }
-                          },
-                          suffixIcon: IconButton(
-                            onPressed: () => setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            }),
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        const _FieldLabel(text: 'Confirm Password'),
-                        const SizedBox(height: 8),
-                        _LuxTextField(
-                          hintText: '••••••••',
-                          icon: Icons.lock_reset,
-                          controller: _confirmController,
-                          obscureText: _obscureConfirm,
-                          textInputAction: TextInputAction.done,
-                          validator: _validateConfirmPassword,
-                          onFieldSubmitted: (_) => _submitRegister(),
-                          suffixIcon: IconButton(
-                            onPressed: () => setState(() {
-                              _obscureConfirm = !_obscureConfirm;
-                            }),
-                            icon: Icon(
-                              _obscureConfirm
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 100),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  AppColors.gold,
-                                  Color(0xFFF3D268),
-                                  AppColors.gold,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.gold.withValues(alpha: 0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                foregroundColor: AppColors.midnight,
-                                shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.1,
-                                ),
-                              ),
-                              onPressed: _isCreating ? null : _submitRegister,
-                              child: _isCreating
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              AppColors.midnight,
-                                            ),
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: const [
-                                        Text('CREATE ACCOUNT'),
-                                        SizedBox(width: 8),
-                                        Icon(Icons.arrow_forward, size: 18),
-                                      ],
-                                    ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                        Center(
-                          child: GestureDetector(
-                            onTap: () => Navigator.of(context).push(
-                              PageRouteBuilder(
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        const LoginScreen(
-                                          headerImageAsset:
-                                              'assets/images/login_screen.png',
-                                        ),
-                                transitionsBuilder:
-                                    (
-                                      context,
-                                      animation,
-                                      secondaryAnimation,
-                                      child,
-                                    ) {
-                                      final curved = CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeOutCubic,
-                                      );
-                                      return FadeTransition(
-                                        opacity: curved,
-                                        child: SlideTransition(
-                                          position: Tween<Offset>(
-                                            begin: const Offset(0, 0.04),
-                                            end: Offset.zero,
-                                          ).animate(curved),
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                              ),
-                            ),
-                            child: RichText(
-                              text: TextSpan(
-                                style: TextStyle(
-                                  color: AppColors.muted,
-                                  fontSize: 13,
-                                ),
-                                children: const [
-                                  TextSpan(text: 'Already have an account? '),
-                                  TextSpan(
-                                    text: 'Log In',
-                                    style: TextStyle(
-                                      color: AppColors.gold,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        TextSpan(
+                          text: 'Account',
+                          style: TextStyle(color: AppColors.gold),
                         ),
                       ],
                     ),
-              ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Center(
+                  child: Text(
+                    'Enter your details to create your account.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 13,
+                      height: 1.5,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                const _FieldLabel(text: 'Full Name'),
+                const SizedBox(height: 8),
+                _LuxTextField(
+                  hintText: 'Ex. Michael Jordan',
+                  icon: Icons.person_outline,
+                  controller: _nameController,
+                  textInputAction: TextInputAction.next,
+                  validator: _validateName,
+                ),
+                const SizedBox(height: 14),
+                const _FieldLabel(text: 'Email Address'),
+                const SizedBox(height: 8),
+                _LuxTextField(
+                  hintText: 'michael@example.com',
+                  icon: Icons.mail_outline,
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  textCapitalization: TextCapitalization.none,
+                  validator: _validateEmail,
+                ),
+                const SizedBox(height: 14),
+                const _FieldLabel(text: 'Password'),
+                const SizedBox(height: 8),
+                _LuxTextField(
+                  hintText: '••••••••',
+                  icon: Icons.lock_outline,
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.next,
+                  validator: _validatePassword,
+                  onChanged: (_) {
+                    if (_confirmController.text.isNotEmpty) {
+                      _formKey.currentState?.validate();
+                    }
+                  },
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    }),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const _FieldLabel(text: 'Confirm Password'),
+                const SizedBox(height: 8),
+                _LuxTextField(
+                  hintText: '••••••••',
+                  icon: Icons.lock_reset,
+                  controller: _confirmController,
+                  obscureText: _obscureConfirm,
+                  textInputAction: TextInputAction.done,
+                  validator: _validateConfirmPassword,
+                  onFieldSubmitted: (_) => _submitRegister(),
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(() {
+                      _obscureConfirm = !_obscureConfirm;
+                    }),
+                    icon: Icon(
+                      _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 100),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          AppColors.gold,
+                          Color(0xFFF3D268),
+                          AppColors.gold,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.gold.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: AppColors.midnight,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      onPressed: _isCreating ? null : _submitRegister,
+                      child: _isCreating
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.midnight,
+                                ),
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Text('CREATE ACCOUNT'),
+                                SizedBox(width: 8),
+                                Icon(Icons.arrow_forward, size: 18),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                Center(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).push(
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            const LoginScreen(
+                              headerImageAsset:
+                                  'assets/images/login_screen.png',
+                            ),
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                              final curved = CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                              );
+                              return FadeTransition(
+                                opacity: curved,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0, 0.04),
+                                    end: Offset.zero,
+                                  ).animate(curved),
+                                  child: child,
+                                ),
+                              );
+                            },
+                      ),
+                    ),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(color: AppColors.muted, fontSize: 13),
+                        children: const [
+                          TextSpan(text: 'Already have an account? '),
+                          TextSpan(
+                            text: 'Log In',
+                            style: TextStyle(
+                              color: AppColors.gold,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -551,6 +541,3 @@ class _LuxTextField extends StatelessWidget {
     );
   }
 }
-
-
-

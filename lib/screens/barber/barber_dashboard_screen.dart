@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app_shell.dart';
+import '../../role_switcher.dart';
+import '../shared/firestore_data_mapper.dart';
+import '../shared/account_screen.dart';
 
 class BarberDashboardScreen extends StatelessWidget {
   const BarberDashboardScreen({super.key});
@@ -50,6 +53,20 @@ class BarberDashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Barber Dashboard'),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const AccountScreen()));
+            },
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Account',
+          ),
+          IconButton(
+            onPressed: () => RoleSwitcher.show(context),
+            icon: const Icon(Icons.swap_horiz),
+            tooltip: 'Switch Role',
+          ),
           IconButton(
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: user.uid));
@@ -108,9 +125,8 @@ class BarberDashboardScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final appointmentId = docs[index].id;
               final data = docs[index].data();
-              final customerName =
-                  (data['customerName'] as String?) ?? 'Unknown';
-              final serviceName = (data['serviceName'] as String?) ?? 'Service';
+              final customerName = FirestoreDataMapper.customerFullName(data);
+              final serviceName = FirestoreDataMapper.serviceName(data);
               final status = (data['status'] as String?) ?? 'pending';
               final startAt = data['startAt'] as Timestamp?;
               final when = startAt == null

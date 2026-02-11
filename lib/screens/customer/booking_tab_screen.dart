@@ -1,135 +1,102 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../../theme/app_colors.dart';
 import 'book_appointment_screen.dart';
-import 'my_appointments_screen.dart';
+import 'select_branch_screen.dart';
 
 class BookingTabScreen extends StatelessWidget {
   const BookingTabScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
-      appBar: AppBar(
-        title: const Text('Booking'),
-        backgroundColor: Colors.transparent,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF121620),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: AppColors.gold.withValues(alpha: 0.2),
-                ),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Book a New Appointment',
-                    style: TextStyle(
-                      color: AppColors.text,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Choose branch, service, barber, and exact time.',
-                    style: TextStyle(color: AppColors.muted),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gold,
-                  foregroundColor: const Color(0xFF05070A),
-                ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const BookAppointmentScreen(),
-                    ),
-                  );
-                },
-                child: const Text('Create Booking'),
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 44,
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const MyAppointmentsScreen(),
-                    ),
-                  );
-                },
-                child: const Text('My Appointments'),
-              ),
-            ),
-            const SizedBox(height: 18),
-            const Text(
-              'Upcoming (UI)',
-              style: TextStyle(
-                color: AppColors.text,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const _UpcomingCard(
-              title: 'Haircut + Beard',
-              subtitle: 'Tomorrow, 5:00 PM - Julian Vance',
-            ),
-          ],
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF05070A),
+        body: Center(
+          child: Text(
+            'Please log in again',
+            style: TextStyle(color: AppColors.text),
+          ),
         ),
-      ),
-    );
-  }
-}
+      );
+    }
 
-class _UpcomingCard extends StatelessWidget {
-  const _UpcomingCard({required this.title, required this.subtitle});
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final selectedShopId =
+            (snapshot.data?.data()?['selectedShopId'] as String?)?.trim();
 
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF121620),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.text,
-              fontWeight: FontWeight.w700,
+        if (selectedShopId == null || selectedShopId.isEmpty) {
+          return Scaffold(
+            backgroundColor: const Color(0xFF05070A),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.location_on_outlined,
+                      color: AppColors.gold,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Select a branch first',
+                      style: TextStyle(
+                        color: AppColors.text,
+                        fontFamily: 'PlayfairDisplay',
+                        fontSize: 26,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Choose a branch to start booking.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.muted.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.gold,
+                          foregroundColor: const Color(0xFF05070A),
+                          textStyle: const TextStyle(
+                            letterSpacing: 2.2,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  SelectBranchScreen(userId: user.uid),
+                            ),
+                          );
+                        },
+                        child: const Text('SELECT BRANCH'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(color: AppColors.muted, fontSize: 12),
-          ),
-        ],
-      ),
+          );
+        }
+
+        return BookAppointmentScreen(initialShopId: selectedShopId);
+      },
     );
   }
 }

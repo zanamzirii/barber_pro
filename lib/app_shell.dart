@@ -5,7 +5,7 @@ import 'screens/auth/splash_screen.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/barber/barber_dashboard_screen.dart';
 import 'screens/customer/customer_shell_screen.dart';
-import 'screens/owner/owner_dashboard_screen.dart';
+import 'screens/owner/owner_shell_screen.dart';
 import 'screens/superadmin/superadmin_dashboard_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -72,15 +72,37 @@ class _RoleGate extends StatelessWidget {
           return const SplashScreen(autoNavigate: false);
         }
 
+        final data = snapshot.data?.data() ?? <String, dynamic>{};
+        final Set<String> roles = <String>{};
+        final legacyRole = (data['role'] as String?)?.trim().toLowerCase();
+        if (legacyRole != null && legacyRole.isNotEmpty) {
+          roles.add(legacyRole);
+        }
+        final rawRoles = data['roles'];
+        if (rawRoles is List) {
+          for (final value in rawRoles) {
+            if (value is String && value.trim().isNotEmpty) {
+              roles.add(value.trim().toLowerCase());
+            }
+          }
+        }
+        if (roles.isEmpty) {
+          roles.add('customer');
+        }
+
+        final requestedActive = (data['activeRole'] as String?)
+            ?.trim()
+            .toLowerCase();
         final role =
-            (snapshot.data?.data()?['role'] as String?)?.toLowerCase().trim() ??
-            'customer';
+            (requestedActive != null && roles.contains(requestedActive))
+            ? requestedActive
+            : roles.first;
 
         switch (role) {
           case 'customer':
             return const CustomerShellScreen();
           case 'owner':
-            return const OwnerDashboardScreen();
+            return const OwnerShellScreen();
           case 'barber':
             return const BarberDashboardScreen();
           case 'superadmin':

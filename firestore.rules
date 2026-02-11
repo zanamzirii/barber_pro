@@ -10,7 +10,13 @@ service cloud.firestore {
     }
 
     function userRole() {
-      return isSignedIn() ? userData(request.auth.uid).role : null;
+      return isSignedIn()
+        ? (
+          userData(request.auth.uid).activeRole != null
+            ? userData(request.auth.uid).activeRole
+            : userData(request.auth.uid).role
+        )
+        : null;
     }
 
     function isSuperAdmin() {

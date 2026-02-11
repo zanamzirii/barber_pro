@@ -1,11 +1,13 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../theme/app_colors.dart';
 import 'owner_data.dart';
+import 'owner_ui.dart';
 
 class OwnerAddBarberScreen extends StatefulWidget {
   const OwnerAddBarberScreen({super.key});
@@ -248,188 +250,365 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage Barbers')),
+      backgroundColor: OwnerUi.screenBg,
       body: FutureBuilder<String>(
         future: _shopIdFuture,
         builder: (context, shopSnapshot) {
           if (shopSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.gold),
+            );
           }
 
           final shopId = shopSnapshot.data ?? '';
           if (shopId.isEmpty) {
-            return const Center(child: Text('No shop assigned'));
+            return const Center(
+              child: Text(
+                'No shop assigned',
+                style: TextStyle(color: Colors.white70),
+              ),
+            );
           }
 
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Form(
-                  key: _formKey,
+          return Stack(
+            children: [
+              OwnerUi.background(),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'Barber Email',
-                          helperText: 'Send invite by email code flow.',
-                        ),
-                        validator: (v) {
-                          final email = (v ?? '').trim();
-                          if (email.isEmpty) return 'Email is required';
-                          final emailPattern = RegExp(
-                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                          );
-                          if (!emailPattern.hasMatch(email)) {
-                            return 'Enter a valid email';
-                          }
-                          return null;
-                        },
+                      Text(
+                        'Staff',
+                        style: OwnerUi.pageTitleStyle(),
                       ),
                       const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: OwnerUi.panelDecoration(),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                style: const TextStyle(color: AppColors.text),
+                                decoration: OwnerUi.inputDecoration(
+                                  'Barber Email',
+                                  helperText:
+                                      'Invite by email code flow for joining your branch.',
+                                ),
+                                validator: (v) {
+                                  final email = (v ?? '').trim();
+                                  if (email.isEmpty) return 'Email is required';
+                                  final emailPattern = RegExp(
+                                    r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                  );
+                                  if (!emailPattern.hasMatch(email)) {
+                                    return 'Enter a valid email';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 46,
+                                child: ElevatedButton(
+                                  onPressed: _saving ? null : _sendInvite,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.gold,
+                                    foregroundColor: const Color(0xFF05070A),
+                                  ),
+                                  child: Text(
+                                    _saving ? 'SENDING...' : 'SEND INVITE',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text('PENDING INVITES', style: OwnerUi.sectionLabelStyle()),
+                      const SizedBox(height: 8),
                       SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _saving ? null : _sendInvite,
-                          child: Text(_saving ? 'Sending...' : 'Send Invite'),
+                        height: 150,
+                        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                          stream: FirebaseFirestore.instance
+                              .collection('barber_invites')
+                              .where('shopId', isEqualTo: shopId)
+                              .where('status', isEqualTo: 'invited')
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.gold,
+                                ),
+                              );
+                            }
+                            if (!snapshot.hasData ||
+                                snapshot.data!.docs.isEmpty) {
+                              return Container(
+                                alignment: Alignment.center,
+                                decoration: OwnerUi.panelDecoration(radius: 14),
+                                child: Text(
+                                  'No pending invites',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final docs = snapshot.data!.docs.toList();
+                            return ListView.separated(
+                              itemCount: docs.length,
+                              separatorBuilder: (_, _) => const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final doc = docs[index];
+                                final data = doc.data();
+                                final email = (data['email'] as String?) ?? '';
+                                final code = (data['code'] as String?) ?? '';
+                                return Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: OwnerUi.panelDecoration(
+                                    radius: 12,
+                                    alpha: 0.08,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              email,
+                                              style: const TextStyle(
+                                                color: AppColors.text,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Code: $code',
+                                              style: TextStyle(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.6,
+                                                ),
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => _copyInviteMessage(
+                                          context,
+                                          code,
+                                          email,
+                                        ),
+                                        child: const Text('COPY'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            _cancelInvite(context, doc.id),
+                                        child: Text(
+                                          'CANCEL',
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.7,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('ACTIVE BARBERS', style: OwnerUi.sectionLabelStyle()),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                          stream: FirebaseFirestore.instance
+                              .collection('shops')
+                              .doc(shopId)
+                              .collection('barbers')
+                              .limit(200)
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.gold,
+                                ),
+                              );
+                            }
+                            if (!snapshot.hasData ||
+                                snapshot.data!.docs.isEmpty) {
+                              return Center(
+                                child: Text(
+                                  'No barbers yet',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final docs = snapshot.data!.docs.toList();
+                            return ListView.separated(
+                              padding: const EdgeInsets.only(bottom: 24),
+                              itemCount: docs.length,
+                              separatorBuilder: (_, _) => const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final docId = docs[index].id;
+                                final data = docs[index].data();
+                                final name =
+                                    (data['name'] as String?) ?? 'Unnamed';
+                                final email = (data['email'] as String?) ?? '-';
+                                final specialty =
+                                    (data['specialty'] as String?) ?? '-';
+                                final isActive =
+                                    (data['isActive'] as bool?) ?? true;
+
+                                return Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: OwnerUi.panelDecoration(
+                                    radius: 12,
+                                    alpha: 0.08,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              name,
+                                              style: const TextStyle(
+                                                color: AppColors.text,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isActive
+                                                  ? Colors.green.withValues(
+                                                      alpha: 0.12,
+                                                    )
+                                                  : Colors.white.withValues(
+                                                      alpha: 0.08,
+                                                    ),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              isActive ? 'ACTIVE' : 'INACTIVE',
+                                              style: TextStyle(
+                                                color: isActive
+                                                    ? Colors.green
+                                                    : Colors.white70,
+                                                fontSize: 10,
+                                                letterSpacing: 1,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        email,
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.6),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      Text(
+                                        specialty,
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.6),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          OutlinedButton(
+                                            onPressed: () =>
+                                                _toggleBarberActive(
+                                              context,
+                                              shopId,
+                                              docId,
+                                              !isActive,
+                                            ),
+                                            style: OutlinedButton.styleFrom(
+                                              side: BorderSide(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.20,
+                                                ),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              isActive
+                                                  ? 'Deactivate'
+                                                  : 'Activate',
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          TextButton(
+                                            onPressed: () =>
+                                                _deleteBarber(
+                                              context,
+                                              shopId,
+                                              docId,
+                                            ),
+                                            child: Text(
+                                              'Remove',
+                                              style: TextStyle(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.75,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Pending Invites',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 170,
-                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                    stream: FirebaseFirestore.instance
-                        .collection('barber_invites')
-                        .where('shopId', isEqualTo: shopId)
-                        .where('status', isEqualTo: 'invited')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return const Center(child: Text('No pending invites'));
-                      }
-
-                      final docs = snapshot.data!.docs.toList();
-                      return ListView.separated(
-                        itemCount: docs.length,
-                        separatorBuilder: (_, index) =>
-                            const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final doc = docs[index];
-                          final data = doc.data();
-                          final email = (data['email'] as String?) ?? '';
-                          final code = (data['code'] as String?) ?? '';
-                          return ListTile(
-                            title: Text(email),
-                            subtitle: Text('Code: $code'),
-                            trailing: Wrap(
-                              spacing: 8,
-                              children: [
-                                TextButton(
-                                  onPressed: () =>
-                                      _copyInviteMessage(context, code, email),
-                                  child: const Text('Copy Invite'),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      _cancelInvite(context, doc.id),
-                                  child: const Text('Cancel'),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Active Barbers',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                    stream: FirebaseFirestore.instance
-                        .collection('shops')
-                        .doc(shopId)
-                        .collection('barbers')
-                        .limit(200)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return const Center(child: Text('No barbers yet'));
-                      }
-
-                      final docs = snapshot.data!.docs.toList();
-                      return ListView.separated(
-                        itemCount: docs.length,
-                        separatorBuilder: (_, index) =>
-                            const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final docId = docs[index].id;
-                          final data = docs[index].data();
-                          final name = (data['name'] as String?) ?? 'Unnamed';
-                          final email = (data['email'] as String?) ?? '-';
-                          final specialty =
-                              (data['specialty'] as String?) ?? '-';
-                          final isActive = (data['isActive'] as bool?) ?? true;
-
-                          return ListTile(
-                            title: Text(name),
-                            subtitle: Text('$email\n$specialty'),
-                            isThreeLine: true,
-                            trailing: Wrap(
-                              spacing: 8,
-                              children: [
-                                TextButton(
-                                  onPressed: () => _toggleBarberActive(
-                                    context,
-                                    shopId,
-                                    docId,
-                                    !isActive,
-                                  ),
-                                  child: Text(
-                                    isActive ? 'Deactivate' : 'Activate',
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      _deleteBarber(context, shopId, docId),
-                                  child: const Text('Remove'),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),

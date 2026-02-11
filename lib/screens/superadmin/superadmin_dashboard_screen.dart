@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../app_shell.dart';
+import '../../role_switcher.dart';
+import '../shared/account_screen.dart';
 
 class SuperAdminDashboardScreen extends StatelessWidget {
   const SuperAdminDashboardScreen({super.key});
@@ -11,6 +13,20 @@ class SuperAdminDashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Super Admin Dashboard'),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const AccountScreen()));
+            },
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Account',
+          ),
+          IconButton(
+            onPressed: () => RoleSwitcher.show(context),
+            icon: const Icon(Icons.swap_horiz),
+            tooltip: 'Switch Role',
+          ),
           IconButton(
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
@@ -25,10 +41,7 @@ class SuperAdminDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: const Center(
-        child: Text('Super admin platform placeholder'),
-      ),
+      body: const Center(child: Text('Super admin platform placeholder')),
     );
   }
 }
-

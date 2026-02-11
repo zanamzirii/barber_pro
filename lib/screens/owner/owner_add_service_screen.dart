@@ -1,7 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../../theme/app_colors.dart';
 import 'owner_data.dart';
+import 'owner_ui.dart';
 
 class OwnerAddServiceScreen extends StatefulWidget {
   const OwnerAddServiceScreen({super.key});
@@ -165,172 +168,302 @@ class _OwnerAddServiceScreenState extends State<OwnerAddServiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage Services')),
+      backgroundColor: OwnerUi.screenBg,
       body: FutureBuilder<String>(
         future: _shopIdFuture,
         builder: (context, shopSnapshot) {
           if (shopSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.gold),
+            );
           }
 
           final shopId = shopSnapshot.data ?? '';
           if (shopId.isEmpty) {
-            return const Center(child: Text('No shop assigned'));
+            return const Center(
+              child: Text(
+                'No shop assigned',
+                style: TextStyle(color: Colors.white70),
+              ),
+            );
           }
 
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Form(
-                  key: _formKey,
+          return Stack(
+            children: [
+              OwnerUi.background(),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Service Name',
-                        ),
-                        validator: (v) {
-                          final value = (v ?? '').trim();
-                          if (value.isEmpty) return 'Service name is required';
-                          return null;
-                        },
+                      Text(
+                        'Services',
+                        style: OwnerUi.pageTitleStyle(),
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _durationController,
-                        decoration: const InputDecoration(
-                          labelText: 'Duration (minutes)',
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: OwnerUi.panelDecoration(),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: _nameController,
+                                style: const TextStyle(color: AppColors.text),
+                                decoration: OwnerUi.inputDecoration(
+                                  'Service Name',
+                                ),
+                                validator: (v) {
+                                  final value = (v ?? '').trim();
+                                  if (value.isEmpty) {
+                                    return 'Service name is required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              TextFormField(
+                                controller: _durationController,
+                                style: const TextStyle(color: AppColors.text),
+                                decoration: OwnerUi.inputDecoration(
+                                  'Duration (minutes)',
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (v) {
+                                  final value = int.tryParse((v ?? '').trim());
+                                  if (value == null || value <= 0) {
+                                    return 'Enter valid duration';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              TextFormField(
+                                controller: _priceController,
+                                style: const TextStyle(color: AppColors.text),
+                                decoration: OwnerUi.inputDecoration(
+                                  'Price (USD)',
+                                ),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                validator: (v) {
+                                  final value = double.tryParse((v ?? '').trim());
+                                  if (value == null || value < 0) {
+                                    return 'Enter valid price';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 46,
+                                child: ElevatedButton(
+                                  onPressed: _saving ? null : _saveService,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.gold,
+                                    foregroundColor: const Color(0xFF05070A),
+                                  ),
+                                  child: Text(
+                                    _saving ? 'SAVING...' : 'ADD SERVICE',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        keyboardType: TextInputType.number,
-                        validator: (v) {
-                          final value = int.tryParse((v ?? '').trim());
-                          if (value == null || value <= 0) {
-                            return 'Enter valid duration';
-                          }
-                          return null;
-                        },
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _priceController,
-                        decoration: const InputDecoration(labelText: 'Price'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        validator: (v) {
-                          final value = double.tryParse((v ?? '').trim());
-                          if (value == null || value < 0) {
-                            return 'Enter valid price';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _saving ? null : _saveService,
-                          child: Text(_saving ? 'Saving...' : 'Add Service'),
+                      const SizedBox(height: 14),
+                      Text('YOUR SERVICES', style: OwnerUi.sectionLabelStyle()),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                          stream: FirebaseFirestore.instance
+                              .collection('shops')
+                              .doc(shopId)
+                              .collection('services')
+                              .limit(200)
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.gold,
+                                ),
+                              );
+                            }
+
+                            if (!snapshot.hasData ||
+                                snapshot.data!.docs.isEmpty) {
+                              return Center(
+                                child: Text(
+                                  'No services yet',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final docs = snapshot.data!.docs.toList()
+                              ..sort((a, b) {
+                                final aTs = a.data()['createdAt'] as Timestamp?;
+                                final bTs = b.data()['createdAt'] as Timestamp?;
+                                final aMs = aTs?.millisecondsSinceEpoch ?? 0;
+                                final bMs = bTs?.millisecondsSinceEpoch ?? 0;
+                                return bMs.compareTo(aMs);
+                              });
+
+                            return ListView.separated(
+                              padding: const EdgeInsets.only(bottom: 24),
+                              itemCount: docs.length,
+                              separatorBuilder: (_, _) => const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final docId = docs[index].id;
+                                final data = docs[index].data();
+                                final name = (data['name'] as String?) ?? 'Unnamed';
+                                final duration =
+                                    (data['durationMinutes'] as num?)?.toInt() ?? 0;
+                                final price =
+                                    (data['price'] as num?)?.toDouble() ?? 0;
+                                final currency =
+                                    (data['currency'] as String?)
+                                            ?.trim()
+                                            .isNotEmpty ==
+                                        true
+                                    ? data['currency'] as String
+                                    : 'USD';
+                                final isActive =
+                                    (data['isActive'] as bool?) ?? true;
+
+                                return Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: OwnerUi.panelDecoration(
+                                    radius: 12,
+                                    alpha: 0.08,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              name,
+                                              style: const TextStyle(
+                                                color: AppColors.text,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isActive
+                                                  ? Colors.green.withValues(
+                                                      alpha: 0.12,
+                                                    )
+                                                  : Colors.white.withValues(
+                                                      alpha: 0.08,
+                                                    ),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              isActive ? 'ACTIVE' : 'INACTIVE',
+                                              style: TextStyle(
+                                                color: isActive
+                                                    ? Colors.green
+                                                    : Colors.white70,
+                                                fontSize: 10,
+                                                letterSpacing: 1,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${duration}m - $currency ${price.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.6),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          OutlinedButton(
+                                            onPressed: () =>
+                                                _toggleServiceActive(
+                                              context,
+                                              shopId,
+                                              docId,
+                                              !isActive,
+                                            ),
+                                            style: OutlinedButton.styleFrom(
+                                              side: BorderSide(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.20,
+                                                ),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              isActive
+                                                  ? 'Deactivate'
+                                                  : 'Activate',
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          TextButton(
+                                            onPressed: () => _deleteService(
+                                              context,
+                                              shopId,
+                                              docId,
+                                            ),
+                                            child: Text(
+                                              'Remove',
+                                              style: TextStyle(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.75,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Your Services',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                    stream: FirebaseFirestore.instance
-                        .collection('shops')
-                        .doc(shopId)
-                        .collection('services')
-                        .limit(200)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return const Center(child: Text('No services yet'));
-                      }
-
-                      final docs = snapshot.data!.docs.toList()
-                        ..sort((a, b) {
-                          final aTs = a.data()['createdAt'] as Timestamp?;
-                          final bTs = b.data()['createdAt'] as Timestamp?;
-                          final aMs = aTs?.millisecondsSinceEpoch ?? 0;
-                          final bMs = bTs?.millisecondsSinceEpoch ?? 0;
-                          return bMs.compareTo(aMs);
-                        });
-
-                      return ListView.separated(
-                        itemCount: docs.length,
-                        separatorBuilder: (_, index) =>
-                            const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final docId = docs[index].id;
-                          final data = docs[index].data();
-                          final name = (data['name'] as String?) ?? 'Unnamed';
-                          final duration =
-                              (data['durationMinutes'] as num?)?.toInt() ?? 0;
-                          final price =
-                              (data['price'] as num?)?.toDouble() ?? 0;
-                          final currency =
-                              (data['currency'] as String?)
-                                      ?.trim()
-                                      .isNotEmpty ==
-                                  true
-                              ? data['currency'] as String
-                              : 'USD';
-                          final isActive = (data['isActive'] as bool?) ?? true;
-
-                          return ListTile(
-                            title: Text(name),
-                            subtitle: Text(
-                              '${duration}m - $currency ${price.toStringAsFixed(2)}',
-                            ),
-                            trailing: Wrap(
-                              spacing: 8,
-                              children: [
-                                TextButton(
-                                  onPressed: () => _toggleServiceActive(
-                                    context,
-                                    shopId,
-                                    docId,
-                                    !isActive,
-                                  ),
-                                  child: Text(
-                                    isActive ? 'Deactivate' : 'Activate',
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      _deleteService(context, shopId, docId),
-                                  child: const Text('Remove'),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
     );
   }
+
 }
