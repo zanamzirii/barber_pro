@@ -23,6 +23,10 @@ service cloud.firestore {
       return isSignedIn() && userRole() == 'superadmin';
     }
 
+    function isOwner() {
+      return isSignedIn() && userRole() == 'owner';
+    }
+
     function ownerShopId() {
       return isSignedIn() ? userData(request.auth.uid).shopId : null;
     }
@@ -41,11 +45,43 @@ service cloud.firestore {
       );
     }
 
+    function userBelongsToOwnerShop(data) {
+      return data.shopId == ownerShopId() || data.branchId == ownerShopId();
+    }
+
+    function ownerCanReadUser() {
+      return isOwner() && resource.data != null && userBelongsToOwnerShop(resource.data);
+    }
+
+    function ownerCanManageBarber() {
+      return isOwner()
+        && resource.data != null
+        && userBelongsToOwnerShop(resource.data)
+        && request.auth.uid != resource.id
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'isActive',
+          'updatedAt',
+          'branchId',
+          'shopId',
+          'roles',
+          'activeRole',
+          'role'
+        ]);
+    }
+
+    function inviteShopId(data) {
+      return data.branchId != null ? data.branchId : data.shopId;
+    }
+
     match /users/{userId} {
       allow create: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.uid == request.auth.uid;
-      allow read, update, delete: if isSignedIn()
+      allow read: if isSignedIn()
+        && (request.auth.uid == userId || isSuperAdmin() || ownerCanReadUser());
+      allow update: if isSignedIn()
+        && (request.auth.uid == userId || isSuperAdmin() || ownerCanManageBarber());
+      allow delete: if isSignedIn()
         && (request.auth.uid == userId || isSuperAdmin());
     }
 
@@ -98,6 +134,31 @@ service cloud.firestore {
           resource.data.ownerId == request.auth.uid ||
           managesShop(resource.data.shopId)
         );
+    }
+
+    match /invites/{inviteId} {
+      allow create: if isSignedIn() && (
+        isSuperAdmin() ||
+        request.resource.data.ownerId == request.auth.uid ||
+        managesShop(inviteShopId(request.resource.data))
+      );
+
+      // Public read allows invite-code verification during barber onboarding.
+      allow read: if true;
+
+      allow update: if isSignedIn() && (
+        isSuperAdmin() ||
+        resource.data.ownerId == request.auth.uid ||
+        managesShop(inviteShopId(resource.data)) ||
+        request.auth.token.email == resource.data.email ||
+        request.resource.data.claimedBy == request.auth.uid
+      );
+
+      allow delete: if isSignedIn() && (
+        isSuperAdmin() ||
+        resource.data.ownerId == request.auth.uid ||
+        managesShop(inviteShopId(resource.data))
+      );
     }
 
     match /appointments/{appointmentId} {

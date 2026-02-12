@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'screens/auth/splash_screen.dart';
-import 'screens/auth/welcome_screen.dart';
-import 'screens/barber/barber_dashboard_screen.dart';
-import 'screens/customer/customer_shell_screen.dart';
-import 'screens/owner/owner_shell_screen.dart';
-import 'screens/superadmin/superadmin_dashboard_screen.dart';
+import 'features/auth/splash_screen.dart';
+import 'features/auth/welcome_screen.dart';
+import 'features/barber/barber_shell_screen.dart';
+import 'features/customer/customer_shell_screen.dart';
+import 'features/owner/owner_shell_screen.dart';
+import 'features/superadmin/superadmin_dashboard_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -17,11 +17,12 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   late final Future<void> _splashDelayFuture;
+  static const Duration _minimumSplashDuration = Duration(milliseconds: 900);
 
   @override
   void initState() {
     super.initState();
-    _splashDelayFuture = Future<void>.delayed(const Duration(seconds: 3));
+    _splashDelayFuture = Future<void>.delayed(_minimumSplashDuration);
   }
 
   @override
@@ -99,14 +100,15 @@ class _RoleGate extends StatelessWidget {
             : roles.first;
 
         switch (role) {
-          case 'customer':
-            return const CustomerShellScreen();
+          case 'superadmin':
+            return const SuperAdminDashboardScreen();
           case 'owner':
             return const OwnerShellScreen();
           case 'barber':
-            return const BarberDashboardScreen();
-          case 'superadmin':
-            return const SuperAdminDashboardScreen();
+            return const BarberShellScreen();
+          case 'customer':
+            return const CustomerShellScreen();
+
           default:
             return Scaffold(body: Center(child: Text('Unknown role: $role')));
         }
