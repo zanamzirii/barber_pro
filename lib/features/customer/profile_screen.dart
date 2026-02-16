@@ -6,6 +6,7 @@ import 'package:barber_pro/core/motion.dart';
 import '../../app_shell.dart';
 import '../../role_switcher.dart';
 import '../../core/theme/app_colors.dart';
+import '../../shared/screens/app_settings_screen.dart';
 import 'customer_data_mapper.dart';
 import 'my_appointments_screen.dart';
 
@@ -129,7 +130,21 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             child: ClipOval(
                               child: avatarUrl.isNotEmpty
-                                  ? Image.network(avatarUrl, fit: BoxFit.cover)
+                                  ? Image.network(
+                                      avatarUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Container(
+                                              color: const Color(0xFF1B2130),
+                                              alignment: Alignment.center,
+                                              child: const Icon(
+                                                Icons.person,
+                                                color: Colors.white70,
+                                              ),
+                                            );
+                                          },
+                                    )
                                   : Container(
                                       color: const Color(0xFF1B2130),
                                       alignment: Alignment.center,
@@ -235,10 +250,9 @@ class ProfileScreen extends StatelessWidget {
                       label: 'App Settings',
                       icon: Icons.settings_outlined,
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Settings screen coming soon'),
-                            behavior: SnackBarBehavior.floating,
+                        Navigator.of(context).push(
+                          Motion.pageRoute(
+                            builder: (_) => const AppSettingsScreen(),
                           ),
                         );
                       },

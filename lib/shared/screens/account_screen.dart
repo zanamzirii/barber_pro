@@ -5,6 +5,7 @@ import 'package:barber_pro/core/motion.dart';
 import '../../app_shell.dart';
 import '../../role_switcher.dart';
 import '../../core/theme/app_colors.dart';
+import 'app_settings_screen.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -87,6 +88,18 @@ class AccountScreen extends StatelessWidget {
                 );
               },
             ),
+          ListTile(
+            onTap: () => Navigator.of(
+              context,
+            ).push(Motion.pageRoute(builder: (_) => const AppSettingsScreen())),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 2),
+            leading: const Icon(Icons.settings_outlined, color: AppColors.gold),
+            title: const Text(
+              'App Settings',
+              style: TextStyle(color: AppColors.text),
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+          ),
           const SizedBox(height: 18),
           SizedBox(
             height: 46,

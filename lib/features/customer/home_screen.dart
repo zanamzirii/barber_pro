@@ -164,7 +164,21 @@ class _LiveBookingPanelState extends State<_LiveBookingPanel> {
                       SizedBox(
                         height: 192,
                         width: double.infinity,
-                        child: Image.network(branchImageUrl, fit: BoxFit.cover),
+                        child: Image.network(
+                          branchImageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: const Color(0xFF121620),
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.image_not_supported_outlined,
+                                color: Colors.white38,
+                                size: 32,
+                              ),
+                            );
+                          },
+                        ),
                       ),
                       Positioned.fill(
                         child: DecoratedBox(
@@ -692,6 +706,7 @@ class _BranchSelectionScreenState extends State<_BranchSelectionScreen> {
                                             image: DecorationImage(
                                               image: NetworkImage(imageUrl),
                                               fit: BoxFit.cover,
+                                              onError: (exception, stackTrace) {},
                                             ),
                                           ),
                                         ),
@@ -1029,7 +1044,19 @@ class _HeaderAvatar extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.gold, width: 1),
       ),
-      child: ClipOval(child: Image.network(avatarUrl, fit: BoxFit.cover)),
+      child: ClipOval(
+        child: Image.network(
+          avatarUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: const Color(0xFF1B2130),
+              alignment: Alignment.center,
+              child: const Icon(Icons.person, color: Colors.white70),
+            );
+          },
+        ),
+      ),
     );
   }
 }
@@ -1166,9 +1193,21 @@ class _NextSessionCard extends StatelessWidget {
                               color: AppColors.gold.withValues(alpha: 0.3),
                             ),
                           ),
-                          child: const CircleAvatar(
-                            backgroundImage: NetworkImage(
+                          child: ClipOval(
+                            child: Image.network(
                               'https://lh3.googleusercontent.com/aida-public/AB6AXuBqFRSHASofU0oYl4E_yVUTqYyRmyJqrY-EKr_sm_r8TLGkBw9Xq1evk4RV-ZZu6xJRKiZJksg3nYCvFYJaKV4_w07QFNb-lLKFkZb3p6DgQeLOb4QJGf3LokFD8soHo0FPaBigtDweRB11_5mVeIAGWXpisUSUpzn3DM8kzXfazpHsdB2LtbyY44iKZSTIoaKkCXtewQVtGj7KaJf8Uuf9QOr3cHF-992INlluLPf8pLE34vc2p31vCksGyRWku6Yup6e5S3JrgAOI',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: const Color(0xFF1B2130),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.person,
+                                    color: Colors.white70,
+                                    size: 16,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),

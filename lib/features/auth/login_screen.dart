@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:barber_pro/core/motion.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:barber_pro/core/auth/auth_debug_feedback.dart';
+import '../../core/auth/user_role_service.dart';
 import '../../app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
+import 'verify_email_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -62,10 +65,26 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+      final user = credential.user;
+      if (user != null) {
+        if (!user.emailVerified) {
+          if (!mounted) return;
+          setState(() {
+            _isLoggingIn = false;
+          });
+          Navigator.of(context).push(
+            Motion.pageRoute(
+              builder: (_) => VerifyEmailScreen(email: user.email ?? ''),
+            ),
+          );
+          return;
+        }
+        await UserRoleService.ensureIdentityDoc(user, defaultRoles: const {});
+      }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -77,6 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+      showDevAuthError(context, e, scope: 'login');
       return;
     } catch (_) {
       if (!mounted) return;

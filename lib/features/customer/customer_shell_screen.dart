@@ -23,7 +23,7 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
   late final List<Widget> _screens = const [
     HomeScreen(),
     ExploreScreen(),
-    HomeScreen(),
+    SizedBox.shrink(),
     ChatScreen(),
     ProfileScreen(),
   ];
@@ -55,98 +55,96 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
   @override
   Widget build(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser?.uid;
+    final effectiveIndex = _currentIndex;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
-      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: userId == null
-            ? null
-            : FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(userId)
-                  .snapshots(),
-        builder: (context, snapshot) {
-          final effectiveIndex = _currentIndex;
-
-          return Stack(
-            children: [
-              IndexedStack(index: effectiveIndex, children: _screens),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                    child: Container(
-                      height: 72,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF121620).withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
+    return PopScope(
+      canPop: effectiveIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          setState(() => _currentIndex = 0);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF05070A),
+        body: Stack(
+          children: [
+            IndexedStack(index: effectiveIndex, children: _screens),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                  child: Container(
+                    height: 72,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF121620).withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          blurRadius: 30,
+                          offset: const Offset(0, 12),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            blurRadius: 30,
-                            offset: const Offset(0, 12),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _NavItem(
-                            icon: Icons.home_outlined,
-                            label: 'Home',
-                            dimmed: true,
-                            active: effectiveIndex == 0,
-                            onTap: () => setState(() => _currentIndex = 0),
-                          ),
-                          _NavItem(
-                            icon: Icons.explore_outlined,
-                            label: 'Explore',
-                            dimmed: true,
-                            active: effectiveIndex == 1,
-                            onTap: () => setState(() => _currentIndex = 1),
-                          ),
-                          _NavItem(
-                            icon: Icons.calendar_month,
-                            label: 'Book',
-                            primary: true,
-                            onTap: userId == null
-                                ? null
-                                : () async {
-                                    setState(() => _currentIndex = 0);
-                                    await _openBookFlow(userId);
-                                  },
-                          ),
-                          _NavItem(
-                            icon: Icons.chat_bubble_outline_rounded,
-                            label: 'Chat',
-                            dimmed: true,
-                            active: effectiveIndex == 3,
-                            onTap: () => setState(() => _currentIndex = 3),
-                          ),
-                          _NavItem(
-                            icon: Icons.person_outline_rounded,
-                            label: 'Profile',
-                            dimmed: true,
-                            active: effectiveIndex == 4,
-                            onTap: () => setState(() => _currentIndex = 4),
-                          ),
-                        ],
-                      ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _NavItem(
+                          icon: Icons.home_outlined,
+                          label: 'Home',
+                          dimmed: true,
+                          active: effectiveIndex == 0,
+                          onTap: () => setState(() => _currentIndex = 0),
+                        ),
+                        _NavItem(
+                          icon: Icons.explore_outlined,
+                          label: 'Explore',
+                          dimmed: true,
+                          active: effectiveIndex == 1,
+                          onTap: () => setState(() => _currentIndex = 1),
+                        ),
+                        _NavItem(
+                          icon: Icons.calendar_month,
+                          label: 'Book',
+                          primary: true,
+                          onTap: userId == null
+                              ? null
+                              : () async {
+                                  setState(() => _currentIndex = 0);
+                                  await _openBookFlow(userId);
+                                },
+                        ),
+                        _NavItem(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          label: 'Chat',
+                          dimmed: true,
+                          active: effectiveIndex == 3,
+                          onTap: () => setState(() => _currentIndex = 3),
+                        ),
+                        _NavItem(
+                          icon: Icons.person_outline_rounded,
+                          label: 'Profile',
+                          dimmed: true,
+                          active: effectiveIndex == 4,
+                          onTap: () => setState(() => _currentIndex = 4),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }

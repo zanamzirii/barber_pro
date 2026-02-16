@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'core/auth/user_role_service.dart';
 import 'features/auth/splash_screen.dart';
+import 'features/auth/verify_email_screen.dart';
 import 'features/auth/welcome_screen.dart';
 import 'features/barber/barber_shell_screen.dart';
 import 'features/customer/customer_shell_screen.dart';
@@ -18,6 +20,8 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   late final Future<void> _splashDelayFuture;
   static const Duration _minimumSplashDuration = Duration(milliseconds: 900);
+  String? _ensuredUid;
+  Future<void>? _ensureIdentityFuture;
 
   @override
   void initState() {
@@ -43,12 +47,33 @@ class _AppShellState extends State<AppShell> {
 
             final user = authSnapshot.data;
             if (user == null) {
+              _ensuredUid = null;
+              _ensureIdentityFuture = null;
               return const WelcomeScreen(
                 backgroundImageAsset: 'assets/images/welcome_screen.png',
               );
             }
 
-            return _RoleGate(uid: user.uid);
+            if (!user.emailVerified) {
+              _ensuredUid = null;
+              _ensureIdentityFuture = null;
+              return VerifyEmailScreen(email: user.email ?? '');
+            }
+
+            if (_ensuredUid != user.uid || _ensureIdentityFuture == null) {
+              _ensuredUid = user.uid;
+              _ensureIdentityFuture = UserRoleService.ensureIdentityDoc(user);
+            }
+
+            return FutureBuilder<void>(
+              future: _ensureIdentityFuture,
+              builder: (context, ensureSnapshot) {
+                if (ensureSnapshot.connectionState != ConnectionState.done) {
+                  return const SplashScreen(autoNavigate: false);
+                }
+                return _RoleGate(uid: user.uid);
+              },
+            );
           },
         );
       },
@@ -74,45 +99,60 @@ class _RoleGate extends StatelessWidget {
         }
 
         final data = snapshot.data?.data() ?? <String, dynamic>{};
-        final Set<String> roles = <String>{};
-        final legacyRole = (data['role'] as String?)?.trim().toLowerCase();
-        if (legacyRole != null && legacyRole.isNotEmpty) {
-          roles.add(legacyRole);
-        }
-        final rawRoles = data['roles'];
-        if (rawRoles is List) {
-          for (final value in rawRoles) {
-            if (value is String && value.trim().isNotEmpty) {
-              roles.add(value.trim().toLowerCase());
+        final fallbackRoles = UserRoleService.extractRoles(data);
+        final fallbackRole = _pickRole(data, fallbackRoles);
+        return FutureBuilder<Set<String>>(
+          future: UserRoleService.inferRolesForUser(
+            uid,
+            data,
+          ).timeout(const Duration(seconds: 6), onTimeout: () => fallbackRoles),
+          builder: (context, rolesSnapshot) {
+            if (rolesSnapshot.connectionState == ConnectionState.waiting ||
+                rolesSnapshot.hasError) {
+              return _shellForRole(fallbackRole);
             }
-          }
-        }
-        if (roles.isEmpty) {
-          roles.add('customer');
-        }
 
-        final requestedActive = (data['activeRole'] as String?)
-            ?.trim()
-            .toLowerCase();
-        final role =
-            (requestedActive != null && roles.contains(requestedActive))
-            ? requestedActive
-            : roles.first;
-
-        switch (role) {
-          case 'superadmin':
-            return const SuperAdminDashboardScreen();
-          case 'owner':
-            return const OwnerShellScreen();
-          case 'barber':
-            return const BarberShellScreen();
-          case 'customer':
-            return const CustomerShellScreen();
-
-          default:
-            return Scaffold(body: Center(child: Text('Unknown role: $role')));
-        }
+            final roles = rolesSnapshot.data ?? fallbackRoles;
+            return _shellForRole(_pickRole(data, roles));
+          },
+        );
       },
     );
+  }
+
+  String _pickRole(Map<String, dynamic> data, Set<String> roles) {
+    final safeRoles = roles.isEmpty ? const <String>{'customer'} : roles;
+    final requestedActive = (data['activeRole'] as String?)
+        ?.trim()
+        .toLowerCase();
+    if (requestedActive != null && safeRoles.contains(requestedActive)) {
+      return requestedActive;
+    }
+    final legacyRole = (data['role'] as String?)?.trim().toLowerCase();
+    if (legacyRole != null &&
+        safeRoles.contains(legacyRole) &&
+        (legacyRole != 'customer' ||
+            (safeRoles.length == 1 && safeRoles.contains('customer')))) {
+      return legacyRole;
+    }
+    if (safeRoles.contains('superadmin')) return 'superadmin';
+    if (safeRoles.contains('owner')) return 'owner';
+    if (safeRoles.contains('barber')) return 'barber';
+    return 'customer';
+  }
+
+  Widget _shellForRole(String role) {
+    switch (role) {
+      case 'superadmin':
+        return const SuperAdminDashboardScreen();
+      case 'owner':
+        return const OwnerShellScreen();
+      case 'barber':
+        return const BarberShellScreen();
+      case 'customer':
+        return const CustomerShellScreen();
+      default:
+        return const CustomerShellScreen();
+    }
   }
 }

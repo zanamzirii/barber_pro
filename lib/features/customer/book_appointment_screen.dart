@@ -283,7 +283,16 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           .where('isActive', isEqualTo: true)
           .snapshots(),
       builder: (context, snapshot) {
-        final docs = snapshot.data?.docs ?? const [];
+        final currentUid = FirebaseAuth.instance.currentUser?.uid;
+        final docs = (snapshot.data?.docs ?? const []).where((d) {
+          if (currentUid == null) return true;
+          final data = d.data();
+          final barberId = (data['barberId'] as String?)?.trim();
+          final barberUserId = (data['barberUserId'] as String?)?.trim();
+          return d.id != currentUid &&
+              barberId != currentUid &&
+              barberUserId != currentUid;
+        }).toList();
 
         if (_selectedBarberId != _anyBarberId &&
             _selectedBarberId != null &&
@@ -752,6 +761,17 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     if (_isSubmitting) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+    if (_selectedBarberId != null &&
+        _selectedBarberId != _anyBarberId &&
+        _selectedBarberId == user.uid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You cannot book yourself as barber'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
     try {
@@ -1272,7 +1292,22 @@ class _BarberCard extends StatelessWidget {
                   1,
                   0,
                 ]),
-                child: Image.network(imageUrl, fit: BoxFit.cover),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  // Keep layout stable when remote avatar fails.
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: const Color(0xFF1B2130),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.person,
+                        color: Colors.white70,
+                        size: 20,
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),

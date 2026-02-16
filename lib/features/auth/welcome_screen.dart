@@ -3,7 +3,7 @@ import 'package:barber_pro/core/motion.dart';
 import '../../core/theme/app_colors.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
-import 'barber_invite_register_screen.dart';
+import 'invite_code_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key, this.backgroundImageAsset});
@@ -150,11 +150,11 @@ class WelcomeScreen extends StatelessWidget {
                   TextButton(
                     onPressed: () => Navigator.of(context).push(
                       Motion.pageRoute(
-                        builder: (_) => const BarberInviteRegisterScreen(),
+                        builder: (_) => const InviteCodeScreen(),
                       ),
                     ),
                     child: const Text(
-                      'Have an invite code? Join as Barber',
+                      'Have invite code?',
                       style: TextStyle(
                         color: AppColors.gold,
                         fontWeight: FontWeight.w700,

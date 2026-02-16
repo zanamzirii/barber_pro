@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:barber_pro/core/motion.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:barber_pro/core/auth/auth_debug_feedback.dart';
 import '../../core/theme/app_colors.dart';
 import 'login_screen.dart';
 
@@ -40,6 +41,7 @@ class _ForgotPasswordConfirmationScreenState
           behavior: SnackBarBehavior.floating,
         ),
       );
+      showDevAuthError(context, e, scope: 'forgot_password_resend');
       return;
     } catch (_) {
       if (!mounted) return;

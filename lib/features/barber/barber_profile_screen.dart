@@ -6,6 +6,7 @@ import 'package:barber_pro/core/motion.dart';
 import '../../app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../role_switcher.dart';
+import '../../shared/screens/app_settings_screen.dart';
 import '../../shared/data/firestore_data_mapper.dart';
 
 class BarberProfileScreen extends StatefulWidget {
@@ -45,10 +46,16 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
               data,
               fallback: user?.photoURL ?? '',
             );
-            final branchName =
+            final branchNameFromUser =
                 (data['branchName'] as String?)?.trim().isNotEmpty == true
                 ? (data['branchName'] as String).trim()
-                : 'Downtown Branch';
+                : '';
+            final branchId =
+                (data['branchId'] as String?)?.trim().isNotEmpty == true
+                ? (data['branchId'] as String).trim()
+                : ((data['shopId'] as String?)?.trim().isNotEmpty == true
+                      ? (data['shopId'] as String).trim()
+                      : null);
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 118),
@@ -66,7 +73,13 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                       ),
                     ),
                     child: IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          Motion.pageRoute(
+                            builder: (_) => const AppSettingsScreen(),
+                          ),
+                        );
+                      },
                       icon: const Icon(
                         Icons.settings,
                         color: Colors.white,
@@ -101,15 +114,42 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  branchName,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                if (branchNameFromUser.isNotEmpty)
+                  Text(
+                    branchNameFromUser,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  )
+                else
+                  StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                    stream: branchId == null
+                        ? null
+                        : FirebaseFirestore.instance
+                              .collection('shops')
+                              .doc(branchId)
+                              .snapshots(),
+                    builder: (context, shopSnapshot) {
+                      final shopData = shopSnapshot.data?.data() ?? const {};
+                      final branchName =
+                          ((shopData['name'] as String?)?.trim().isNotEmpty ??
+                              false)
+                          ? (shopData['name'] as String).trim()
+                          : 'Branch';
+                      return Text(
+                        branchName,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    },
                   ),
-                ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -245,7 +285,13 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     _ActionTile(
                       icon: Icons.settings_applications_outlined,
                       label: 'App Settings',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.of(context).push(
+                          Motion.pageRoute(
+                            builder: (_) => const AppSettingsScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _ActionTile(
                       icon: Icons.swap_horiz_rounded,

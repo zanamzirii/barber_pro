@@ -219,6 +219,7 @@ class _SelectBranchScreenState extends State<SelectBranchScreen> {
                                             image: DecorationImage(
                                               image: NetworkImage(imageUrl),
                                               fit: BoxFit.cover,
+                                              onError: (exception, stackTrace) {},
                                             ),
                                           ),
                                         ),

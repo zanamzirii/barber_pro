@@ -32,24 +32,33 @@ class _BarberShellScreenState extends State<BarberShellScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
-      body: Stack(
-        children: [
-          IndexedStack(
-            index: _index,
-            children: [
-              BarberDashboardScreen(
-                onOpenScheduleTab: () => setState(() => _index = 1),
-              ),
-              const BarberScheduleScreen(),
-              const BarberClientsScreen(),
-              const _BarberChatPlaceholderScreen(),
-              const BarberProfileScreen(),
-            ],
-          ),
-          _BarberBottomBar(index: _index, onTap: _onTap),
-        ],
+    return PopScope(
+      canPop: _index == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_index != 0) {
+          setState(() => _index = 0);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF05070A),
+        body: Stack(
+          children: [
+            IndexedStack(
+              index: _index,
+              children: [
+                BarberDashboardScreen(
+                  onOpenScheduleTab: () => setState(() => _index = 1),
+                ),
+                const BarberScheduleScreen(),
+                const BarberClientsScreen(),
+                const _BarberChatPlaceholderScreen(),
+                const BarberProfileScreen(),
+              ],
+            ),
+            _BarberBottomBar(index: _index, onTap: _onTap),
+          ],
+        ),
       ),
     );
   }

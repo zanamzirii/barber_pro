@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/auth/user_role_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'owner_data.dart';
 import 'owner_ui.dart';
@@ -177,6 +178,21 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
     );
   }
 
+  Future<void> _enableBarberModeForMe() async {
+    final ok = await UserRoleService.enableBarberModeForOwnerCurrentUser();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Barber mode enabled for your account'
+              : 'Could not enable barber mode. Create/select your branch first.',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _sendInvite(String branchId) async {
     if (_saving) return;
     final rawEmail = _emailController.text.trim().toLowerCase();
@@ -324,11 +340,73 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
         'isActive': false,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+      final branchId = await _branchIdFuture;
+      if (branchId.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('shops')
+            .doc(branchId)
+            .collection('barbers')
+            .doc(userId)
+            .set({
+              'isActive': false,
+              'status': 'inactive',
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Could not deactivate barber: ${e.toString()}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _activateBarber(String userId) async {
+    try {
+      final branchId = await _branchIdFuture;
+      final userSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      final userData = userSnap.data() ?? <String, dynamic>{};
+      final roles = userData['roles'];
+      final update = <String, dynamic>{
+        'isActive': true,
+        'branchId': branchId,
+        'shopId': branchId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      if (roles is Map<String, dynamic>) {
+        update['roles.barber'] = true;
+      } else {
+        update['roles'] = FieldValue.arrayUnion(<String>['barber']);
+      }
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        ...update,
+      }, SetOptions(merge: true));
+      if (branchId.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('shops')
+            .doc(branchId)
+            .collection('barbers')
+            .doc(userId)
+            .set({
+              'barberId': userId,
+              'barberUserId': userId,
+              'shopId': branchId,
+              'isActive': true,
+              'status': 'active',
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not activate barber: ${e.toString()}'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -363,6 +441,16 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
           .collection('users')
           .doc(userId)
           .set(update, SetOptions(merge: true));
+
+      final branchId = await _branchIdFuture;
+      if (branchId.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('shops')
+            .doc(branchId)
+            .collection('barbers')
+            .doc(userId)
+            .delete();
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -386,6 +474,7 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
     return Scaffold(
       backgroundColor: OwnerUi.screenBg,
       body: FutureBuilder<String>(
@@ -473,6 +562,28 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 42,
+                        child: OutlinedButton(
+                          onPressed: _enableBarberModeForMe,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.gold,
+                            side: BorderSide(
+                              color: AppColors.gold.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: const Text(
+                            'ENABLE BARBER MODE FOR ME',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                              fontSize: 11,
+                            ),
                           ),
                         ),
                       ),
@@ -684,10 +795,7 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Text(
-                        'ACTIVE BARBERS',
-                        style: OwnerUi.sectionLabelStyle(),
-                      ),
+                      Text('BARBERS', style: OwnerUi.sectionLabelStyle()),
                       const SizedBox(height: 8),
                       Expanded(
                         child:
@@ -695,7 +803,6 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
                               stream: FirebaseFirestore.instance
                                   .collection('users')
                                   .where('branchId', isEqualTo: branchId)
-                                  .where('isActive', isEqualTo: true)
                                   .limit(200)
                                   .snapshots(),
                               builder: (context, snapshot) {
@@ -715,7 +822,7 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
                                 if (docs.isEmpty) {
                                   return Center(
                                     child: Text(
-                                      'No active barbers in this branch',
+                                      'No barbers in this branch',
                                       style: TextStyle(
                                         color: Colors.white.withValues(
                                           alpha: 0.7,
@@ -733,6 +840,10 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
                                   itemBuilder: (context, index) {
                                     final doc = docs[index];
                                     final data = doc.data();
+                                    final isSelf =
+                                        currentUid != null &&
+                                        currentUid.isNotEmpty &&
+                                        doc.id == currentUid;
                                     final fullName =
                                         ((data['fullName'] as String?)
                                                 ?.trim()
@@ -747,6 +858,7 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
                                               : 'Unnamed');
                                     final email =
                                         (data['email'] as String?) ?? '-';
+                                    final isActive = data['isActive'] == true;
 
                                     return Container(
                                       padding: const EdgeInsets.all(12),
@@ -776,41 +888,73 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
                                               fontSize: 12,
                                             ),
                                           ),
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            children: [
-                                              OutlinedButton(
-                                                onPressed: () =>
-                                                    _deactivateBarber(doc.id),
-                                                style: OutlinedButton.styleFrom(
-                                                  side: BorderSide(
-                                                    color: Colors.white
-                                                        .withValues(
-                                                          alpha: 0.20,
-                                                        ),
-                                                  ),
-                                                ),
-                                                child: const Text('Deactivate'),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              TextButton(
-                                                onPressed: () =>
-                                                    _removeBarberFromBranch(
-                                                      doc.id,
-                                                      data,
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            isActive ? 'Active' : 'Inactive',
+                                            style: TextStyle(
+                                              color: isActive
+                                                  ? AppColors.gold
+                                                  : Colors.white.withValues(
+                                                      alpha: 0.5,
                                                     ),
-                                                child: Text(
-                                                  'Remove from Branch',
-                                                  style: TextStyle(
-                                                    color: Colors.white
-                                                        .withValues(
-                                                          alpha: 0.75,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          if (isSelf)
+                                            Text(
+                                              'Owner account',
+                                              style: TextStyle(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.6,
+                                                ),
+                                                fontSize: 12,
+                                              ),
+                                            )
+                                          else
+                                            Row(
+                                              children: [
+                                                OutlinedButton(
+                                                  onPressed: () => isActive
+                                                      ? _deactivateBarber(
+                                                          doc.id,
+                                                        )
+                                                      : _activateBarber(doc.id),
+                                                  style:
+                                                      OutlinedButton.styleFrom(
+                                                        side: BorderSide(
+                                                          color: Colors.white
+                                                              .withValues(
+                                                                alpha: 0.20,
+                                                              ),
                                                         ),
+                                                      ),
+                                                  child: Text(
+                                                    isActive
+                                                        ? 'Deactivate'
+                                                        : 'Activate',
                                                   ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
+                                                const SizedBox(width: 8),
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      _removeBarberFromBranch(
+                                                        doc.id,
+                                                        data,
+                                                      ),
+                                                  child: Text(
+                                                    'Remove from Branch',
+                                                    style: TextStyle(
+                                                      color: Colors.white
+                                                          .withValues(
+                                                            alpha: 0.75,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                         ],
                                       ),
                                     );

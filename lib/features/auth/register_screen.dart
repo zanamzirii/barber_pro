@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:barber_pro/core/motion.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:barber_pro/core/auth/auth_debug_feedback.dart';
+import '../../core/auth/pending_onboarding_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'login_screen.dart';
 import 'verify_email_screen.dart';
+import 'welcome_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -84,27 +86,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _isCreating = true;
     });
 
+    User? createdUser;
+    bool verificationSent = false;
+    String? nonBlockingWarning;
+
     try {
       final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
+      createdUser = credential.user;
 
-      await credential.user?.updateDisplayName(_nameController.text.trim());
-      await credential.user?.sendEmailVerification();
+      try {
+        await createdUser?.updateDisplayName(_nameController.text.trim());
+      } catch (_) {}
 
-      final user = credential.user;
+      try {
+        await createdUser?.sendEmailVerification();
+        verificationSent = true;
+      } catch (_) {
+        nonBlockingWarning =
+            'Account created, but verification email was not sent. Open Verify screen and tap Resend Email.';
+      }
+
+      final user = createdUser;
       if (user != null) {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'uid': user.uid,
-          'fullName': _nameController.text.trim(),
-          'email': user.email ?? _emailController.text.trim(),
-          'roles': <String>['customer'],
-          'activeRole': 'customer',
-          'role': 'customer',
-          'createdAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        try {
+          await PendingOnboardingService.savePendingRegistration(user: user);
+        } catch (_) {
+          // Non-blocking: verify flow can still finalize identity after email verification.
+        }
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
@@ -117,19 +129,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+      showDevAuthError(context, e, scope: 'register');
       return;
     } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _isCreating = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Something went wrong. Please try again.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
+      // If auth account was created but a later non-auth step failed unexpectedly,
+      // keep the user journey alive by moving to verification instead of hard-failing.
+      if (createdUser == null) {
+        if (!mounted) return;
+        setState(() {
+          _isCreating = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Something went wrong. Please try again.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
     }
 
     if (!mounted) return;
@@ -137,6 +154,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() {
       _isCreating = false;
     });
+
+    final warningMessage = nonBlockingWarning;
+    if (warningMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(warningMessage),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (!verificationSent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created. If no email arrives, tap Resend Email.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
 
     Navigator.of(context).push(
       Motion.pageRoute(
@@ -162,45 +196,67 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  void _goBackOrWelcome() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    navigator.pushAndRemoveUntil(
+      Motion.pageRoute(
+        builder: (_) => const WelcomeScreen(
+          backgroundImageAsset: 'assets/images/welcome_screen.png',
+        ),
+      ),
+      (_) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.midnight,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: _submitted
-                ? AutovalidateMode.onUserInteraction
-                : AutovalidateMode.disabled,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    InkWell(
-                      onTap: () => Navigator.pop(context),
-                      borderRadius: BorderRadius.circular(999),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
+      body: PopScope(
+        canPop: Navigator.of(context).canPop(),
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          _goBackOrWelcome();
+        },
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Form(
+              key: _formKey,
+              autovalidateMode: _submitted
+                  ? AutovalidateMode.onUserInteraction
+                  : AutovalidateMode.disabled,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      InkWell(
+                        onTap: _goBackOrWelcome,
+                        borderRadius: BorderRadius.circular(999),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new,
+                            size: 18,
+                            color: AppColors.text,
                           ),
                         ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new,
-                          size: 18,
-                          color: AppColors.text,
-                        ),
                       ),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
+                      const Spacer(),
+                    ],
+                  ),
                 const SizedBox(height: 24),
                 Center(
                   child: RichText(
@@ -396,7 +452,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

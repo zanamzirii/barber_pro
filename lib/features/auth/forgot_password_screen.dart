@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:barber_pro/core/motion.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:barber_pro/core/auth/auth_debug_feedback.dart';
 import '../../core/theme/app_colors.dart';
 import 'forgot_password_confirmation_screen.dart';
 import 'login_screen.dart';
@@ -74,6 +75,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+      showDevAuthError(context, e, scope: 'forgot_password');
       return;
     } catch (_) {
       if (!mounted) return;
