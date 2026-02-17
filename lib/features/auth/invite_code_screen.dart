@@ -1,4 +1,4 @@
-import 'package:barber_pro/app_shell.dart';
+﻿import 'package:barber_pro/app_shell.dart';
 import 'package:barber_pro/core/auth/auth_debug_feedback.dart';
 import 'package:barber_pro/core/auth/user_role_service.dart';
 import 'package:barber_pro/core/auth/pending_onboarding_service.dart';
@@ -17,6 +17,7 @@ class InviteCodeScreen extends StatefulWidget {
 }
 
 class _InviteCodeScreenState extends State<InviteCodeScreen> {
+  final _ownerFormKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
   final _fullNameController = TextEditingController();
@@ -29,9 +30,11 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
   bool _loading = false;
   bool _codeVerified = false;
   bool _existingAccount = false;
+  bool _inviteFieldFocused = false;
   bool _obscurePassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
+  bool _ownerSubmitted = false;
   String? _codeErrorText;
 
   _InvitePayload? _invite;
@@ -279,6 +282,11 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     final invite = _invite;
     if (invite == null) return;
 
+    if (invite.role == 'owner' && !_existingAccount) {
+      setState(() => _ownerSubmitted = true);
+      if (!_ownerFormKey.currentState!.validate()) return;
+    }
+
     final fullName = _fullNameController.text.trim();
     final password = _newPasswordController.text;
     final confirm = _confirmPasswordController.text;
@@ -287,7 +295,19 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
       return;
     }
     if (password.length < 8) {
-      _showMessage('Password must be at least 8 characters');
+      _showMessage('Use at least 8 characters');
+      return;
+    }
+    if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
+      _showMessage('Include at least one letter');
+      return;
+    }
+    if (!RegExp(r'[0-9]').hasMatch(password)) {
+      _showMessage('Include at least one number');
+      return;
+    }
+    if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
+      _showMessage('Include at least one symbol');
       return;
     }
     if (password != confirm) {
@@ -728,228 +748,274 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
         backgroundColor: AppColors.midnight,
         body: showInputCard
             ? Container(
-              decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.15,
-                  colors: [Color(0xCC0B0F1A), Color(0xF205070A)],
+                decoration: const BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 1.15,
+                    colors: [Color(0xCC0B0F1A), Color(0xF205070A)],
+                  ),
                 ),
-              ),
-              child: SafeArea(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final media = MediaQuery.of(context);
-                    final keyboardInset = media.viewInsets.bottom;
-                    final compact = keyboardInset > 0;
-                    return AnimatedPadding(
-                      duration: Motion.microAnimationDuration,
-                      curve: Motion.microAnimationCurve,
-                      padding: EdgeInsets.fromLTRB(
-                        14,
-                        18,
-                        14,
-                        keyboardInset > 0 ? keyboardInset + 12 : 20,
-                      ),
-                      child: SingleChildScrollView(
-                        physics: const ClampingScrollPhysics(),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight - (compact ? 8 : 0),
-                          ),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 360),
-                              child: Container(
-                                width: double.infinity,
-                                padding: EdgeInsets.fromLTRB(
-                                  24,
-                                  compact ? 24 : 34,
-                                  24,
-                                  compact ? 20 : 28,
+                child: SafeArea(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final media = MediaQuery.of(context);
+                      final keyboardInset = media.viewInsets.bottom;
+                      final compact = keyboardInset > 0;
+                      return AnimatedPadding(
+                        duration: Motion.microAnimationDuration,
+                        curve: Motion.microAnimationCurve,
+                        padding: EdgeInsets.fromLTRB(
+                          14,
+                          18,
+                          14,
+                          keyboardInset > 0 ? keyboardInset + 12 : 20,
+                        ),
+                        child: SingleChildScrollView(
+                          physics: const ClampingScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight:
+                                  constraints.maxHeight - (compact ? 8 : 0),
+                            ),
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 360,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0x990B0F1A),
-                                  borderRadius: BorderRadius.circular(46),
-                                  border: Border.all(
-                                    color: AppColors.gold.withValues(alpha: 0.35),
-                                    width: 0.6,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.fromLTRB(
+                                    22,
+                                    compact ? 22 : 30,
+                                    22,
+                                    compact ? 18 : 24,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.45),
-                                      blurRadius: 42,
-                                      offset: const Offset(0, 20),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xE60B0F1A),
+                                    borderRadius: BorderRadius.circular(28),
+                                    border: Border.all(
+                                      color: AppColors.gold.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                      width: 0.9,
                                     ),
-                                  ],
-                                ),
-                                child: MediaQuery(
-                                  data: media.copyWith(
-                                    textScaler: const TextScaler.linear(1.0),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.45,
+                                        ),
+                                        blurRadius: 28,
+                                        offset: const Offset(0, 14),
+                                      ),
+                                    ],
                                   ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.key_rounded,
-                                        size: compact ? 30 : 34,
-                                        color: AppColors.gold,
-                                      ),
-                                      SizedBox(height: compact ? 10 : 16),
-                                      const Text(
-                                        'Enter Invite Code',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontFamily: 'PlayfairDisplay',
-                                          fontSize: 30,
-                                          height: 1.0,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.text,
+                                  child: MediaQuery(
+                                    data: media.copyWith(
+                                      textScaler: const TextScaler.linear(1.0),
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.key_rounded,
+                                          size: 32,
+                                          color: AppColors.gold,
                                         ),
-                                      ),
-                                      SizedBox(height: compact ? 10 : 14),
-                                      Text(
-                                        'Verify your professional status with\nthe code provided by your shop\nowner.',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.52,
-                                          ),
-                                          fontSize: compact ? 13 : 14,
-                                          height: 1.5,
-                                        ),
-                                      ),
-                                      SizedBox(height: compact ? 14 : 24),
-                                      AnimatedContainer(
-                                        duration: Motion.microAnimationDuration,
-                                        curve: Motion.microAnimationCurve,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(14),
-                                          border: Border.all(
-                                            color: _codeErrorText == null
-                                                ? Colors.white.withValues(alpha: 0.18)
-                                                : const Color(0xFFDC2626),
-                                          ),
-                                          gradient: const LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Color(0xFF0D1320),
-                                              Color(0xFF0A0F19),
-                                            ],
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: _codeErrorText == null
-                                                  ? AppColors.gold.withValues(alpha: 0.06)
-                                                  : const Color(0x33DC2626),
-                                              blurRadius: 16,
-                                              offset: const Offset(0, 8),
-                                            ),
-                                          ],
-                                        ),
-                                        child: TextField(
-                                          controller: _codeController,
-                                          onChanged: _onCodeChanged,
-                                          textCapitalization:
-                                              TextCapitalization.characters,
-                                          enabled: !_loading,
+                                        const SizedBox(height: 14),
+                                        const Text(
+                                          'Enter Invite Code',
                                           textAlign: TextAlign.center,
-                                          style: const TextStyle(
+                                          style: TextStyle(
+                                            fontFamily: 'PlayfairDisplay',
+                                            fontSize: 32,
+                                            height: 1.0,
+                                            fontWeight: FontWeight.w700,
                                             color: AppColors.text,
-                                            fontSize: 24,
-                                            letterSpacing: 2.6,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          decoration: InputDecoration(
-                                            hintText: 'XXXX - XXXX',
-                                            hintStyle: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.28),
-                                              letterSpacing: 2.4,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            isDense: true,
-                                            border: InputBorder.none,
-                                            contentPadding: EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: compact ? 14 : 18,
-                                            ),
                                           ),
                                         ),
-                                      ),
-                                      if (_codeErrorText != null) ...[
-                                        SizedBox(height: compact ? 8 : 10),
+                                        const SizedBox(height: 14),
                                         Text(
-                                          _codeErrorText!,
+                                          'Verify your professional status with\nthe code provided by your shop\nowner.',
                                           textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            color: Color(0xFFEF4444),
-                                            fontSize: 11,
-                                            height: 1.4,
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.52,
+                                            ),
+                                            fontSize: 13,
+                                            height: 1.5,
                                           ),
                                         ),
-                                      ],
-                                      SizedBox(height: compact ? 12 : 18),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        height: compact ? 48 : 54,
-                                        child: ElevatedButton(
-                                          onPressed: _loading
-                                              ? null
-                                              : _verifyCode,
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: AppColors.gold,
-                                            foregroundColor: const Color(0xFF05070A),
-                                            shape: RoundedRectangleBorder(
+                                        const SizedBox(height: 24),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          height: 58,
+                                          child: AnimatedContainer(
+                                            duration:
+                                                Motion.microAnimationDuration,
+                                            curve: Motion.microAnimationCurve,
+                                            decoration: BoxDecoration(
                                               borderRadius:
                                                   BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: _codeErrorText == null
+                                                    ? (_inviteFieldFocused
+                                                          ? AppColors.gold
+                                                          : Colors.white
+                                                                .withValues(
+                                                                  alpha: 0.1,
+                                                                ))
+                                                    : const Color(0xFFDC2626),
+                                                width: _inviteFieldFocused
+                                                    ? 1.15
+                                                    : 1,
+                                              ),
+                                              color: const Color(0xFF121620),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: _codeErrorText == null
+                                                      ? AppColors.gold.withValues(
+                                                          alpha:
+                                                              _inviteFieldFocused
+                                                              ? 0.18
+                                                              : 0.08,
+                                                        )
+                                                      : const Color(0x33DC2626),
+                                                  blurRadius:
+                                                      _inviteFieldFocused
+                                                      ? 18
+                                                      : 14,
+                                                  offset: const Offset(0, 6),
+                                                ),
+                                              ],
                                             ),
-                                            elevation: 0,
-                                            textStyle: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              letterSpacing: 2.2,
-                                              fontSize: 14,
+                                            child: Focus(
+                                              onFocusChange: (focused) {
+                                                if (!mounted) return;
+                                                setState(() {
+                                                  _inviteFieldFocused = focused;
+                                                });
+                                              },
+                                              child: TextField(
+                                                controller: _codeController,
+                                                onChanged: _onCodeChanged,
+                                                textCapitalization:
+                                                    TextCapitalization
+                                                        .characters,
+                                                enabled: !_loading,
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                  color: AppColors.text,
+                                                  fontSize: 22,
+                                                  letterSpacing: 2.6,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                decoration: InputDecoration(
+                                                  hintText: 'XXXX - XXXX',
+                                                  hintStyle: TextStyle(
+                                                    color: Colors.white
+                                                        .withValues(
+                                                          alpha: 0.28,
+                                                        ),
+                                                    fontSize: 20,
+                                                    letterSpacing: 2.2,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  isDense: true,
+                                                  border: InputBorder.none,
+                                                  contentPadding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 14,
+                                                        vertical: 16,
+                                                      ),
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                          child: Text(
-                                            _loading ? 'CHECKING...' : 'VERIFY & PROCEED',
                                           ),
                                         ),
-                                      ),
-                                      if (!compact) ...[
-                                        const SizedBox(height: 10),
-                                        TextButton(
-                                          onPressed: _loading
-                                              ? null
-                                              : () => Navigator.of(
-                                                  context,
-                                                ).maybePop(),
-                                          style: TextButton.styleFrom(
-                                            foregroundColor: Colors.white
-                                                .withValues(alpha: 0.45),
+                                        if (_codeErrorText != null) ...[
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            _codeErrorText!,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              color: Color(0xFFEF4444),
+                                              fontSize: 11,
+                                              height: 1.4,
+                                            ),
                                           ),
-                                          child: const Text(
-                                            'Cancel',
-                                            style: TextStyle(fontSize: 15),
+                                        ],
+                                        const SizedBox(height: 18),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          height: 56,
+                                          child: ElevatedButton(
+                                            onPressed: _loading
+                                                ? null
+                                                : _verifyCode,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.gold,
+                                              foregroundColor: const Color(
+                                                0xFF05070A,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
+                                              ),
+                                              elevation: 8,
+                                              shadowColor: AppColors.gold
+                                                  .withValues(alpha: 0.28),
+                                              textStyle: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 2.3,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              _loading
+                                                  ? 'CHECKING...'
+                                                  : 'VERIFY & PROCEED',
+                                            ),
                                           ),
                                         ),
+                                        if (!compact) ...[
+                                          const SizedBox(height: 10),
+                                          TextButton(
+                                            onPressed: _loading
+                                                ? null
+                                                : () => Navigator.of(
+                                                    context,
+                                                  ).maybePop(),
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: Colors.white
+                                                  .withValues(alpha: 0.45),
+                                            ),
+                                            child: const Text(
+                                              'Cancel',
+                                              style: TextStyle(fontSize: 15),
+                                            ),
+                                          ),
+                                        ],
                                       ],
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
               )
             : (invite.role == 'barber' && !_existingAccount)
             ? _buildLuxuryBarberRegistration(invite)
+            : (invite.role == 'barber' && _existingAccount)
+            ? _buildLuxuryBarberExistingAccount(invite)
             : (invite.role == 'owner' && !_existingAccount)
             ? _buildLuxuryOwnerRegistration(invite)
+            : (invite.role == 'owner' && _existingAccount)
+            ? _buildLuxuryOwnerExistingAccount(invite)
             : SafeArea(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
@@ -1045,7 +1111,9 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                                 : null,
                             readOnly: true,
                             enableInteractiveSelection: false,
-                            decoration: const InputDecoration(labelText: 'Email'),
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                            ),
                           ),
                           if (invite.role == 'owner') ...[
                             const SizedBox(height: 10),
@@ -1071,8 +1139,8 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                               labelText: 'Password',
                               suffixIcon: IconButton(
                                 onPressed: () => setState(
-                                  () =>
-                                      _obscureNewPassword = !_obscureNewPassword,
+                                  () => _obscureNewPassword =
+                                      !_obscureNewPassword,
                                 ),
                                 icon: Icon(
                                   _obscureNewPassword
@@ -1124,41 +1192,323 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     );
   }
 
+  Widget _buildLuxuryOwnerExistingAccount(_InvitePayload invite) {
+    final shopName = (invite.shopName ?? '').trim().isEmpty
+        ? 'Sovereign Heights'
+        : invite.shopName!.trim();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0B0F1A),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(
+                child: Text(
+                  'Complete Owner Setup',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'PlayfairDisplay',
+                    fontSize: 31,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.gold,
+                    height: 1.08,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: Text(
+                  'Finalize your administrative credentials to begin\nmanaging your barbershop.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.58),
+                    fontSize: 14,
+                    height: 1.45,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF121620),
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(
+                    color: AppColors.gold.withValues(alpha: 0.55),
+                    width: 1.1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'INVITE TYPE',
+                          style: TextStyle(
+                            color: AppColors.gold.withValues(alpha: 0.9),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 2.8,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withValues(alpha: 0.13),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: AppColors.gold.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: const Text(
+                            'OWNER',
+                            style: TextStyle(
+                              color: AppColors.gold,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Divider(
+                      color: Colors.white.withValues(alpha: 0.07),
+                      height: 1,
+                    ),
+                    const SizedBox(height: 14),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Assigned Email',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.52),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.lock_outline_rounded,
+                          color: AppColors.gold.withValues(alpha: 0.95),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            invite.email,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 26),
+              Text(
+                'BRANCH NAME',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 2.4,
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _shopNameController,
+                style: const TextStyle(color: AppColors.text, fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: shopName,
+                  filled: true,
+                  fillColor: const Color(0xFF121620),
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.28),
+                    fontSize: 14,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 18,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: AppColors.gold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              Text(
+                'BRANCH LOCATION',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 2.4,
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _shopLocationController,
+                style: const TextStyle(color: AppColors.text, fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: 'Search address or district',
+                  filled: true,
+                  fillColor: const Color(0xFF121620),
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.28),
+                    fontSize: 14,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 18,
+                  ),
+                  suffixIcon: Icon(
+                    Icons.location_on_outlined,
+                    color: AppColors.gold.withValues(alpha: 0.8),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: AppColors.gold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              Text(
+                'ACCOUNT PASSWORD',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 2.4,
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                style: const TextStyle(color: AppColors.text, fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: '••••••••••••',
+                  filled: true,
+                  fillColor: const Color(0xFF121620),
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.28),
+                    fontSize: 14,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 18,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: AppColors.gold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 34),
+              SizedBox(
+                width: double.infinity,
+                height: 64,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _joinWithExistingAccount,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: const Color(0xFF05070A),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 2.3,
+                    ),
+                    shadowColor: AppColors.gold.withValues(alpha: 0.3),
+                    elevation: 10,
+                  ),
+                  child: Text(
+                    _loading ? 'VERIFYING...' : 'VERIFY & BECOME OWNER',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Center(
+                child: TextButton(
+                  onPressed: _loading
+                      ? null
+                      : () => Navigator.of(context).maybePop(),
+                  child: Text(
+                    'Cancel Setup',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildLuxuryBarberRegistration(_InvitePayload invite) {
     final password = _newPasswordController.text;
     final hasMinLength = password.length >= 8;
-    final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
+    final hasLetter = RegExp(r'[A-Za-z]').hasMatch(password);
     final hasNumber = RegExp(r'[0-9]').hasMatch(password);
-    final isStrong = hasMinLength && hasUppercase && hasNumber;
+    final hasSymbol = RegExp(r'[^A-Za-z0-9]').hasMatch(password);
+    final isStrong = hasMinLength && hasLetter && hasNumber && hasSymbol;
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Text(
-                'THE SANCTUARY GUILD',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.gold.withValues(alpha: 0.9),
-                  fontSize: 10,
-                  letterSpacing: 2.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
             const Center(
               child: Text(
                 'Join as Barber',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'PlayfairDisplay',
-                  fontSize: 50,
-                  height: 0.98,
-                  color: Colors.white,
+                  fontSize: 31,
+                  color: AppColors.gold,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1166,82 +1516,100 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
             const SizedBox(height: 10),
             Center(
               child: Text(
-                'Complete your account to join this branch and begin your journey with us.',
+                'Create your professional profile to begin.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.58),
                   height: 1.45,
-                  fontSize: 15,
+                  fontSize: 14,
                 ),
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 24),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF070A12),
-                borderRadius: BorderRadius.circular(14),
+                color: const Color(0xFF121620),
+                borderRadius: BorderRadius.circular(26),
                 border: Border.all(
-                  color: AppColors.gold.withValues(alpha: 0.8),
-                  width: 0.7,
+                  color: AppColors.gold.withValues(alpha: 0.55),
+                  width: 1.1,
                 ),
               ),
               child: Column(
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.gold.withValues(alpha: 0.08),
-                          border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.4),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'INVITATION CONFIRMED',
-                          style: TextStyle(
-                            color: AppColors.gold.withValues(alpha: 0.95),
-                            fontSize: 9,
-                            letterSpacing: 2,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
                       Icon(
-                        Icons.verified_user_rounded,
-                        color: AppColors.gold.withValues(alpha: 0.65),
-                        size: 18,
+                        Icons.check_circle_outline_rounded,
+                        color: AppColors.gold.withValues(alpha: 0.95),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'INVITATION CONFIRMED',
+                        style: TextStyle(
+                          color: AppColors.gold.withValues(alpha: 0.95),
+                          fontSize: 11,
+                          letterSpacing: 2.1,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  _inviteRow(
-                    icon: Icons.content_cut_rounded,
-                    label: 'INVITE TYPE',
-                    value: 'Professional Barber',
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Text(
+                        'Invite Type',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.46),
+                          fontSize: 11,
+                        ),
+                      ),
+                      const Spacer(),
+                      const Text(
+                        'Professional Barber',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  _inviteRow(
-                    icon: Icons.location_on_rounded,
-                    label: 'BRANCH',
-                    value:
+                  const SizedBox(height: 11),
+                  Row(
+                    children: [
+                      Text(
+                        'Branch',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.46),
+                          fontSize: 11,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
                         ((invite.shopName ?? '').trim().isEmpty
-                            ? 'Branch'
-                            : invite.shopName!)
-                        .trim(),
+                                ? 'Knightsbridge Elite'
+                                : invite.shopName!)
+                            .trim(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 11),
                   Container(
                     padding: const EdgeInsets.only(top: 10),
                     decoration: BoxDecoration(
                       border: Border(
-                        top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                        top: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
                       ),
                     ),
                     child: Row(
@@ -1251,30 +1619,23 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'EMAIL ADDRESS',
+                                'Locked Email',
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.45),
-                                  fontSize: 9,
-                                  letterSpacing: 1.8,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 3),
                               Text(
                                 invite.email,
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.8),
-                                  fontSize: 15,
-                                  fontStyle: FontStyle.italic,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        Icon(
-                          Icons.lock_rounded,
-                          color: Colors.white.withValues(alpha: 0.35),
-                          size: 18,
                         ),
                       ],
                     ),
@@ -1282,24 +1643,70 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 22),
-            _luxuryLabel('FULL NAME'),
+            const SizedBox(height: 30),
+            Text(
+              'Full Name',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.56),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _fullNameController,
-              decoration: const InputDecoration(
-                hintText: 'e.g. Alexander Sterling',
+              style: const TextStyle(color: AppColors.text, fontSize: 15),
+              decoration: InputDecoration(
+                hintText: 'Ex. John Doe',
+                hintStyle: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.28),
+                ),
+                filled: true,
+                fillColor: const Color(0xFF121620),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.gold),
+                ),
               ),
             ),
             const SizedBox(height: 14),
-            _luxuryLabel('PASSWORD'),
+            Text(
+              'Password',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.56),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _newPasswordController,
               obscureText: _obscureNewPassword,
+              style: const TextStyle(color: AppColors.text, fontSize: 15),
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: 'Enter password',
+                hintText: 'password',
+                hintStyle: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.28),
+                ),
+                filled: true,
+                fillColor: const Color(0xFF121620),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.gold),
+                ),
                 suffixIcon: IconButton(
                   onPressed: () => setState(
                     () => _obscureNewPassword = !_obscureNewPassword,
@@ -1308,6 +1715,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     _obscureNewPassword
                         ? Icons.visibility_off
                         : Icons.visibility,
+                    color: Colors.white.withValues(alpha: 0.45),
                   ),
                 ),
               ),
@@ -1316,7 +1724,11 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 14, color: AppColors.gold),
+                  const Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: AppColors.gold,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     'Password is too weak',
@@ -1330,13 +1742,36 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
               ),
             ],
             const SizedBox(height: 14),
-            _luxuryLabel('CONFIRM PASSWORD'),
+            Text(
+              'Confirm Password',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.56),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _confirmPasswordController,
               obscureText: _obscureConfirmPassword,
+              style: const TextStyle(color: AppColors.text, fontSize: 15),
               decoration: InputDecoration(
-                hintText: 'Re-enter password',
+                hintText: 'confirm password',
+                hintStyle: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.28),
+                ),
+                filled: true,
+                fillColor: const Color(0xFF121620),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.gold),
+                ),
                 suffixIcon: IconButton(
                   onPressed: () => setState(
                     () => _obscureConfirmPassword = !_obscureConfirmPassword,
@@ -1345,44 +1780,133 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     _obscureConfirmPassword
                         ? Icons.visibility_off
                         : Icons.visibility,
+                    color: Colors.white.withValues(alpha: 0.45),
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0x1A141A2A),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-              ),
+            Padding(
+              padding: const EdgeInsets.only(left: 2),
               child: Column(
                 children: [
-                  _ruleRow('Minimum 8 characters', hasMinLength),
+                  Row(
+                    children: [
+                      Icon(
+                        hasMinLength
+                            ? Icons.check_rounded
+                            : Icons.cancel_rounded,
+                        size: 16,
+                        color: hasMinLength
+                            ? AppColors.gold
+                            : Colors.white.withValues(alpha: 0.4),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'At least 8 characters',
+                        style: TextStyle(
+                          color: hasMinLength
+                              ? AppColors.gold
+                              : Colors.white.withValues(alpha: 0.4),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
-                  _ruleRow('At least 1 uppercase letter', hasUppercase),
+                        Row(
+                          children: [
+                            Icon(
+                              hasLetter
+                                  ? Icons.check_rounded
+                                  : Icons.cancel_rounded,
+                              size: 16,
+                              color: hasLetter
+                                  ? AppColors.gold
+                                  : Colors.white.withValues(alpha: 0.4),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Contains one letter',
+                              style: TextStyle(
+                                color: hasLetter
+                                    ? AppColors.gold
+                                    : Colors.white.withValues(alpha: 0.4),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        hasNumber ? Icons.check_rounded : Icons.cancel_rounded,
+                        size: 16,
+                        color: hasNumber
+                            ? AppColors.gold
+                            : Colors.white.withValues(alpha: 0.4),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Contains one number',
+                        style: TextStyle(
+                          color: hasNumber
+                              ? AppColors.gold
+                              : Colors.white.withValues(alpha: 0.4),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
-                  _ruleRow('At least 1 number', hasNumber),
+                  Row(
+                    children: [
+                      Icon(
+                        hasSymbol ? Icons.check_rounded : Icons.cancel_rounded,
+                        size: 16,
+                        color: hasSymbol
+                            ? AppColors.gold
+                            : Colors.white.withValues(alpha: 0.4),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Contains one symbol',
+                        style: TextStyle(
+                          color: hasSymbol
+                              ? AppColors.gold
+                              : Colors.white.withValues(alpha: 0.4),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 26),
             SizedBox(
               width: double.infinity,
-              height: 54,
+              height: 64,
               child: ElevatedButton(
                 onPressed: _loading ? null : _createAndJoin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.gold,
-                  foregroundColor: const Color(0xFF070A12),
-                  textStyle: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.3,
+                  foregroundColor: const Color(0xFF05070A),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
                   ),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2.3,
+                  ),
+                  elevation: 10,
+                  shadowColor: AppColors.gold.withValues(alpha: 0.3),
                 ),
-                child: Text(_loading ? 'PROCESSING...' : 'CREATE ACCOUNT & JOIN'),
+                child: Text(
+                  _loading ? 'PROCESSING...' : 'CREATE ACCOUNT & JOIN',
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -1394,26 +1918,27 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                         _existingAccount = true;
                       }),
                 child: const Text(
-                  'ALREADY HAVE AN ACCOUNT? SIGN IN & JOIN',
+                  'Already have account? Sign in & Join',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
+                    color: AppColors.gold,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
             Center(
               child: TextButton(
-                onPressed: _loading ? null : () => Navigator.of(context).maybePop(),
+                onPressed: _loading
+                    ? null
+                    : () => Navigator.of(context).maybePop(),
                 child: Text(
                   'CANCEL REGISTRATION',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.45),
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
+                    letterSpacing: 2.2,
                   ),
                 ),
               ),
@@ -1424,236 +1949,572 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     );
   }
 
-  Widget _buildLuxuryOwnerRegistration(_InvitePayload invite) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Set Up Your Branch',
-              style: TextStyle(
-                fontFamily: 'PlayfairDisplay',
-                fontSize: 24,
-                height: 1.1,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'Complete your owner account setup',
-              style: TextStyle(
-                color: AppColors.gold.withValues(alpha: 0.92),
-                fontSize: 14,
-                height: 1.25,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: SizedBox(
-                height: 160,
-                width: double.infinity,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset('assets/images/login_screen.png', fit: BoxFit.cover),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.15),
-                            Colors.black.withValues(alpha: 0.75),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 10,
-                      bottom: 8,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.gold,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'NEW INVITATION',
-                              style: TextStyle(
-                                color: Color(0xFF070A12),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Join the Elite Network',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'PlayfairDisplay',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _luxuryLabel('INVITATION DETAILS'),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF070A12),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: AppColors.gold.withValues(alpha: 0.35),
-                  width: 0.7,
-                ),
-              ),
+  Widget _buildLuxuryBarberExistingAccount(_InvitePayload invite) {
+    final branchName =
+        ((invite.shopName ?? '').trim().isEmpty
+                ? 'Mayfair Sanctuary'
+                : invite.shopName!)
+            .trim();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0B0F1A),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.verified_user_rounded,
-                        size: 16,
-                        color: AppColors.gold.withValues(alpha: 0.9),
+                  const Center(
+                    child: Text(
+                      'Join as Barber',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'PlayfairDisplay',
+                        fontSize: 31,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.gold,
+                        height: 1.08,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Invited by Super Admin',
-                        style: TextStyle(
-                          color: AppColors.gold.withValues(alpha: 0.9),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    invite.email,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'PlayfairDisplay',
+                  Center(
+                    child: Text(
+                      'Complete your profile connection to the sanctuary',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.58),
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 26),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF121620),
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(
+                        color: AppColors.gold.withValues(alpha: 0.55),
+                        width: 1.1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'BRANCH NAME',
+                                    style: TextStyle(
+                                      color: AppColors.gold.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                      fontSize: 10,
+                                      letterSpacing: 2.2,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    branchName,
+                                    style: const TextStyle(
+                                      fontFamily: 'PlayfairDisplay',
+                                      fontSize: 20,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.gold.withValues(alpha: 0.12),
+                                border: Border.all(
+                                  color: AppColors.gold.withValues(alpha: 0.3),
+                                ),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: const Text(
+                                'BARBER',
+                                style: TextStyle(
+                                  color: AppColors.gold,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Divider(
+                          color: Colors.white.withValues(alpha: 0.06),
+                          height: 1,
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          'CONNECTED EMAIL',
+                          style: TextStyle(
+                            color: AppColors.gold.withValues(alpha: 0.85),
+                            fontSize: 10,
+                            letterSpacing: 2.0,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.lock_outline_rounded,
+                              color: Colors.white.withValues(alpha: 0.55),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                invite.email,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.82),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
                   Text(
-                    'Role: Owner',
+                    'ACCOUNT PASSWORD',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.72),
-                      fontSize: 16,
+                      color: Colors.white.withValues(alpha: 0.58),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 2.4,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    style: const TextStyle(color: AppColors.text, fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText: '••••••••',
+                      hintStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.26),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFF121620),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 18,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: AppColors.gold),
+                      ),
+                      suffixIcon: IconButton(
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: AppColors.gold.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 64,
+                    child: ElevatedButton(
+                      onPressed: _loading ? null : _joinWithExistingAccount,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: const Color(0xFF05070A),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 10,
+                        shadowColor: AppColors.gold.withValues(alpha: 0.3),
+                        textStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2.3,
+                        ),
+                      ),
+                      child: Text(
+                        _loading ? 'PROCESSING...' : 'SIGN IN & JOIN',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Center(
+                    child: TextButton(
+                      onPressed: _loading
+                          ? null
+                          : () => Navigator.of(context).maybePop(),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLuxuryOwnerRegistration(_InvitePayload invite) {
+    final ownerPassword = _newPasswordController.text;
+    final ownerHasMinLength = ownerPassword.length >= 8;
+    final ownerHasLetter = RegExp(r'[A-Za-z]').hasMatch(ownerPassword);
+    final ownerHasNumber = RegExp(r'[0-9]').hasMatch(ownerPassword);
+    final ownerHasSymbol = RegExp(r'[^A-Za-z0-9]').hasMatch(ownerPassword);
+
+    return SafeArea(
+      child: MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: const Color(0xFF121620),
+                hintStyle: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.28),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                ),
+                errorStyle: const TextStyle(color: Color(0xFFFF8A80)),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 18,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    width: 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: AppColors.gold.withValues(alpha: 1),
+                    width: 1,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFFFF8A80)),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFFFF8A80)),
+                ),
+              ),
+            ),
+            child: Form(
+              key: _ownerFormKey,
+              autovalidateMode: _ownerSubmitted
+                  ? AutovalidateMode.onUserInteraction
+                  : AutovalidateMode.disabled,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Center(
+                    child: Text(
+                      'Set Up Your Branch',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'PlayfairDisplay',
+                        fontSize: 31,
+                        fontWeight: FontWeight.w700,
+                        height: 1.08,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Text(
+                      'Establish your domain and begin your journey\nas an elite owner.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.60),
+                        fontSize: 14,
+                        height: 1.55,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
+                      horizontal: 18,
+                      vertical: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.gold.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
+                      color: const Color(0xFF121620),
+                      borderRadius: BorderRadius.circular(26),
                       border: Border.all(
-                        color: AppColors.gold.withValues(alpha: 0.35),
+                        color: AppColors.gold.withValues(alpha: 0.55),
+                        width: 1.1,
                       ),
                     ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.lock_rounded,
-                          size: 15,
-                          color: AppColors.gold,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(
+                                    Icons.verified_rounded,
+                                    color: AppColors.gold,
+                                    size: 17,
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    'INVITE TYPE: OWNER',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.lock_rounded,
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                    size: 17,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      invite.email,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.66,
+                                        ),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Locked',
-                          style: TextStyle(
-                            color: AppColors.gold.withValues(alpha: 0.95),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.gold.withValues(alpha: 0.12),
+                            border: Border.all(
+                              color: AppColors.gold.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.workspace_premium_rounded,
+                            color: AppColors.gold,
+                            size: 30,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            _ownerSectionCard(
-              icon: Icons.storefront_rounded,
-              title: 'Branch Information',
-              child: Column(
-                children: [
-                  _ownerFieldLabel('BRANCH NAME *'),
-                  const SizedBox(height: 7),
-                  TextField(
-                    controller: _shopNameController,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. Sterling Heights Manor',
+                  const SizedBox(height: 26),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.gold.withValues(alpha: 0.34),
+                          thickness: 1,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          'BRANCH INFORMATION',
+                          style: TextStyle(
+                            color: AppColors.gold.withValues(alpha: 0.98),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 3.4,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.gold.withValues(alpha: 0.34),
+                          thickness: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Branch Name',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 12,
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  _ownerFieldLabel('LOCATION *'),
-                  const SizedBox(height: 7),
-                  TextField(
-                    controller: _shopLocationController,
-                    decoration: const InputDecoration(
-                      hintText: 'City, Country',
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _shopNameController,
+                    style: const TextStyle(color: AppColors.text, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Sovereign Heights',
                       prefixIcon: Icon(
-                        Icons.location_on_rounded,
-                        color: Colors.white54,
+                        Icons.storefront_rounded,
+                        color: AppColors.gold.withValues(alpha: 0.75),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            _ownerSectionCard(
-              icon: Icons.person_add_alt_1_rounded,
-              title: 'Owner Account',
-              child: Column(
-                children: [
-                  _ownerFieldLabel('FULL NAME'),
-                  const SizedBox(height: 7),
-                  TextField(
-                    controller: _fullNameController,
-                    decoration: const InputDecoration(
-                      hintText: 'Alexander Sterling',
-                    ),
+                    validator: (value) {
+                      final v = (value ?? '').trim();
+                      if (v.isEmpty) return 'Branch name is required';
+                      if (v.length < 2) return 'Enter a valid branch name';
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 14),
-                  _ownerFieldLabel('PASSWORD'),
-                  const SizedBox(height: 7),
-                  TextField(
+                  Text(
+                    'Branch Location',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _shopLocationController,
+                    style: const TextStyle(color: AppColors.text, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Write branch location',
+                      prefixIcon: Icon(
+                        Icons.location_on_rounded,
+                        color: AppColors.gold.withValues(alpha: 0.75),
+                      ),
+                    ),
+                    validator: (value) {
+                      final v = (value ?? '').trim();
+                      if (v.isEmpty) return 'Branch location is required';
+                      if (v.length < 2) return 'Enter a valid location';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 26),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.gold.withValues(alpha: 0.34),
+                          thickness: 1,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          'ACCOUNT DETAILS',
+                          style: TextStyle(
+                            color: AppColors.gold.withValues(alpha: 0.98),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 3.4,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.gold.withValues(alpha: 0.34),
+                          thickness: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Full Name',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _fullNameController,
+                    style: const TextStyle(color: AppColors.text, fontSize: 14),
+                    decoration: const InputDecoration(
+                      hintText: 'Ex. Alexander Sterling',
+                    ),
+                    validator: (value) {
+                      final v = (value ?? '').trim();
+                      if (v.isEmpty) return 'Full name is required';
+                      if (v.length < 2) return 'Enter your full name';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Password',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
                     controller: _newPasswordController,
                     obscureText: _obscureNewPassword,
+                    style: const TextStyle(color: AppColors.text, fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: '••••••••',
+                      hintText: 'password',
                       suffixIcon: IconButton(
                         onPressed: () => setState(
                           () => _obscureNewPassword = !_obscureNewPassword,
@@ -1662,263 +2523,231 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                           _obscureNewPassword
                               ? Icons.visibility_off
                               : Icons.visibility,
+                          color: Colors.white.withValues(alpha: 0.45),
                         ),
                       ),
                     ),
+                    onChanged: (_) {
+                      setState(() {});
+                      if (_confirmPasswordController.text.isNotEmpty) {
+                        _ownerFormKey.currentState?.validate();
+                      }
+                    },
+                    validator: (value) {
+                      final password = value ?? '';
+                      if (password.isEmpty) return 'Password is required';
+                      if (password.length < 8) {
+                        return 'Use at least 8 characters';
+                      }
+                      if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
+                        return 'Include at least one letter';
+                      }
+                      if (!RegExp(r'[0-9]').hasMatch(password)) {
+                        return 'Include at least one number';
+                      }
+                      if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
+                        return 'Include at least one symbol';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 14),
-                  _ownerFieldLabel('CONFIRM PASSWORD'),
-                  const SizedBox(height: 7),
-                  TextField(
+                  Text(
+                    'Confirm Password',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
+                    style: const TextStyle(color: AppColors.text, fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: '••••••••',
+                      hintText: 'confirm password',
                       suffixIcon: IconButton(
                         onPressed: () => setState(
-                          () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
                         ),
                         icon: Icon(
                           _obscureConfirmPassword
                               ? Icons.visibility_off
                               : Icons.visibility,
+                          color: Colors.white.withValues(alpha: 0.45),
                         ),
                       ),
                     ),
+                    validator: (value) {
+                      final confirm = value ?? '';
+                      if (confirm.isEmpty) return 'Confirm your password';
+                      if (confirm != _newPasswordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                    onFieldSubmitted: (_) => _createAndJoin(),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF070A12),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.gold.withValues(alpha: 0.22)),
-              ),
-              child: Column(
-                children: [
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 2),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              ownerHasMinLength
+                                  ? Icons.check_rounded
+                                  : Icons.cancel_rounded,
+                              size: 16,
+                              color: ownerHasMinLength
+                                  ? AppColors.gold
+                                  : Colors.white.withValues(alpha: 0.4),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'At least 8 characters',
+                              style: TextStyle(
+                                color: ownerHasMinLength
+                                    ? AppColors.gold
+                                    : Colors.white.withValues(alpha: 0.4),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              ownerHasLetter
+                                  ? Icons.check_rounded
+                                  : Icons.cancel_rounded,
+                              size: 16,
+                              color: ownerHasLetter
+                                  ? AppColors.gold
+                                  : Colors.white.withValues(alpha: 0.4),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Contains one letter',
+                              style: TextStyle(
+                                color: ownerHasLetter
+                                    ? AppColors.gold
+                                    : Colors.white.withValues(alpha: 0.4),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              ownerHasNumber
+                                  ? Icons.check_rounded
+                                  : Icons.cancel_rounded,
+                              size: 16,
+                              color: ownerHasNumber
+                                  ? AppColors.gold
+                                  : Colors.white.withValues(alpha: 0.4),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Contains one number',
+                              style: TextStyle(
+                                color: ownerHasNumber
+                                    ? AppColors.gold
+                                    : Colors.white.withValues(alpha: 0.4),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              ownerHasSymbol
+                                  ? Icons.check_rounded
+                                  : Icons.cancel_rounded,
+                              size: 16,
+                              color: ownerHasSymbol
+                                  ? AppColors.gold
+                                  : Colors.white.withValues(alpha: 0.4),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Contains one symbol',
+                              style: TextStyle(
+                                color: ownerHasSymbol
+                                    ? AppColors.gold
+                                    : Colors.white.withValues(alpha: 0.4),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 34),
                   SizedBox(
                     width: double.infinity,
-                    height: 54,
+                    height: 64,
                     child: ElevatedButton(
                       onPressed: _loading ? null : _createAndJoin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.gold,
-                        foregroundColor: const Color(0xFF070A12),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'PlayfairDisplay',
-                        ),
+                        foregroundColor: const Color(0xFF05070A),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _loading
-                                ? 'Creating...'
-                                : 'Create Owner Account',
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.chevron_right_rounded),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: _loading ? null : () => Navigator.of(context).maybePop(),
-                    child: Text(
-                      'Cancel Setup',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Have account?',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                        elevation: 10,
+                        shadowColor: AppColors.gold.withValues(alpha: 0.32),
+                        textStyle: const TextStyle(
                           fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2.3,
                         ),
                       ),
-                      TextButton(
-                        onPressed: _loading
-                            ? null
-                            : () => setState(() {
-                                _existingAccount = true;
-                              }),
-                        child: const Text(
-                          'Sign in instead',
-                          style: TextStyle(
-                            color: AppColors.gold,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
+                      child: Text(
+                        _loading ? 'CREATING...' : 'CREATE OWNER ACCOUNT',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Center(
+                    child: TextButton(
+                      onPressed: _loading
+                          ? null
+                          : () => Navigator.of(context).maybePop(),
+                      child: Text(
+                        'CANCEL SETUP',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.52),
+                          fontSize: 11,
+                          letterSpacing: 3.0,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Icon(
+                      Icons.shield_outlined,
+                      color: Colors.white.withValues(alpha: 0.14),
+                      size: 24,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 28),
-            Center(
-              child: Text(
-                'STERLING MANAGEMENT SYSTEM © 2024 • LUXURY STANDARD',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.24),
-                  fontSize: 8,
-                  letterSpacing: 1.8,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _ownerSectionCard({
-    required IconData icon,
-    required String title,
-    required Widget child,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF070A12),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.22)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: AppColors.gold, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'PlayfairDisplay',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Divider(color: AppColors.gold.withValues(alpha: 0.2), height: 1),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _ownerFieldLabel(String text) {
-    return Text(
-      text,
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.52),
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.4,
-      ),
-    );
-  }
-
-  Widget _luxuryLabel(String label) {
-    return Text(
-      label,
-      style: TextStyle(
-        color: AppColors.gold.withValues(alpha: 0.86),
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.7,
-      ),
-    );
-  }
-
-  Widget _inviteRow({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF121620),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          ),
-          child: Icon(icon, size: 18, color: AppColors.gold),
-        ),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
-                fontSize: 9,
-                letterSpacing: 1.5,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _ruleRow(String text, bool done) {
-    return Row(
-      children: [
-        Icon(
-          done ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
-          size: 16,
-          color: done
-              ? AppColors.gold
-              : Colors.white.withValues(alpha: 0.35),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: TextStyle(
-            color: done
-                ? Colors.white.withValues(alpha: 0.88)
-                : Colors.white.withValues(alpha: 0.45),
-            fontSize: 12,
           ),
         ),
-      ],
+      ),
     );
   }
 }

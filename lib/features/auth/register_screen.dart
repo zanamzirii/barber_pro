@@ -74,6 +74,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
+  Widget _passwordRuleItem(String text, bool passed) {
+    return Row(
+      children: [
+        Icon(
+          passed ? Icons.check_rounded : Icons.cancel_rounded,
+          size: 16,
+          color: passed
+              ? AppColors.gold
+              : AppColors.muted.withValues(alpha: 0.7),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          text,
+          style: TextStyle(
+            color: passed
+                ? AppColors.gold
+                : AppColors.muted.withValues(alpha: 0.8),
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _submitRegister() async {
     FocusScope.of(context).unfocus();
     setState(() {
@@ -166,7 +190,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } else if (!verificationSent) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Account created. If no email arrives, tap Resend Email.'),
+          content: Text(
+            'Account created. If no email arrives, tap Resend Email.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -214,6 +240,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final password = _passwordController.text;
+    final hasMinLength = password.length >= 8;
+    final hasLetter = RegExp(r'[A-Za-z]').hasMatch(password);
+    final hasNumber = RegExp(r'[0-9]').hasMatch(password);
+    final hasSymbol = RegExp(r'[^A-Za-z0-9]').hasMatch(password);
+
     return Scaffold(
       backgroundColor: AppColors.midnight,
       body: PopScope(
@@ -257,201 +289,234 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const Spacer(),
                     ],
                   ),
-                const SizedBox(height: 24),
-                Center(
-                  child: RichText(
-                    textAlign: TextAlign.center,
-                    text: const TextSpan(
-                      style: TextStyle(
-                        fontSize: 32,
-                        height: 1.15,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'PlayfairDisplay',
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'Create an ',
-                          style: TextStyle(color: AppColors.text),
-                        ),
-                        TextSpan(
-                          text: 'Account',
-                          style: TextStyle(color: AppColors.gold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Center(
-                  child: Text(
-                    'Enter your details to create your account.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 13,
-                      height: 1.5,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 40),
-                const _FieldLabel(text: 'Full Name'),
-                const SizedBox(height: 8),
-                _LuxTextField(
-                  hintText: 'Ex. Michael Jordan',
-                  icon: Icons.person_outline,
-                  controller: _nameController,
-                  textInputAction: TextInputAction.next,
-                  validator: _validateName,
-                ),
-                const SizedBox(height: 14),
-                const _FieldLabel(text: 'Email Address'),
-                const SizedBox(height: 8),
-                _LuxTextField(
-                  hintText: 'michael@example.com',
-                  icon: Icons.mail_outline,
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  textCapitalization: TextCapitalization.none,
-                  validator: _validateEmail,
-                ),
-                const SizedBox(height: 14),
-                const _FieldLabel(text: 'Password'),
-                const SizedBox(height: 8),
-                _LuxTextField(
-                  hintText: 'password',
-                  icon: Icons.lock_outline,
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  textInputAction: TextInputAction.next,
-                  validator: _validatePassword,
-                  onChanged: (_) {
-                    if (_confirmController.text.isNotEmpty) {
-                      _formKey.currentState?.validate();
-                    }
-                  },
-                  suffixIcon: IconButton(
-                    onPressed: () => setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    }),
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      color: AppColors.muted,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const _FieldLabel(text: 'Confirm Password'),
-                const SizedBox(height: 8),
-                _LuxTextField(
-                  hintText: 'password',
-                  icon: Icons.lock_reset,
-                  controller: _confirmController,
-                  obscureText: _obscureConfirm,
-                  textInputAction: TextInputAction.done,
-                  validator: _validateConfirmPassword,
-                  onFieldSubmitted: (_) => _submitRegister(),
-                  suffixIcon: IconButton(
-                    onPressed: () => setState(() {
-                      _obscureConfirm = !_obscureConfirm;
-                    }),
-                    icon: Icon(
-                      _obscureConfirm ? Icons.visibility_off : Icons.visibility,
-                      color: AppColors.muted,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 100),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          AppColors.gold,
-                          Color(0xFFF3D268),
-                          AppColors.gold,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.gold.withValues(alpha: 0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: AppColors.midnight,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                      onPressed: _isCreating ? null : _submitRegister,
-                      child: _isCreating
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppColors.midnight,
-                                ),
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Text('CREATE ACCOUNT'),
-                                SizedBox(width: 8),
-                                Icon(Icons.arrow_forward, size: 18),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 40),
-                Center(
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(context).push(
-                      Motion.pageRoute(
-                        builder: (_) => const LoginScreen(
-                          headerImageAsset: 'assets/images/login_screen.png',
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: 24),
+                  Center(
                     child: RichText(
-                      text: TextSpan(
-                        style: TextStyle(color: AppColors.muted, fontSize: 13),
-                        children: const [
-                          TextSpan(text: 'Already have an account? '),
+                      textAlign: TextAlign.center,
+                      text: const TextSpan(
+                        style: TextStyle(
+                          fontSize: 32,
+                          height: 1.15,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'PlayfairDisplay',
+                        ),
+                        children: [
                           TextSpan(
-                            text: 'Log In',
-                            style: TextStyle(
-                              color: AppColors.gold,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            text: 'Create an ',
+                            style: TextStyle(color: AppColors.text),
+                          ),
+                          TextSpan(
+                            text: 'Account',
+                            style: TextStyle(color: AppColors.gold),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  const Center(
+                    child: Text(
+                      'Enter your details to create your account.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 13,
+                        height: 1.5,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  const _FieldLabel(text: 'Full Name'),
+                  const SizedBox(height: 8),
+                  _LuxTextField(
+                    hintText: 'Ex. Michael Jordan',
+                    icon: Icons.person_outline,
+                    controller: _nameController,
+                    textInputAction: TextInputAction.next,
+                    validator: _validateName,
+                  ),
+                  const SizedBox(height: 14),
+                  const _FieldLabel(text: 'Email Address'),
+                  const SizedBox(height: 8),
+                  _LuxTextField(
+                    hintText: 'michael@example.com',
+                    icon: Icons.mail_outline,
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    textCapitalization: TextCapitalization.none,
+                    validator: _validateEmail,
+                  ),
+                  const SizedBox(height: 14),
+                  const _FieldLabel(text: 'Password'),
+                  const SizedBox(height: 8),
+                  _LuxTextField(
+                    hintText: 'password',
+                    icon: Icons.lock_outline,
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.next,
+                    validator: _validatePassword,
+                    onChanged: (_) {
+                      setState(() {});
+                      if (_confirmController.text.isNotEmpty) {
+                        _formKey.currentState?.validate();
+                      }
+                    },
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      }),
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const _FieldLabel(text: 'Confirm Password'),
+                  const SizedBox(height: 8),
+                  _LuxTextField(
+                    hintText: 'confirm password',
+                    icon: Icons.lock_reset,
+                    controller: _confirmController,
+                    obscureText: _obscureConfirm,
+                    textInputAction: TextInputAction.done,
+                    validator: _validateConfirmPassword,
+                    onFieldSubmitted: (_) => _submitRegister(),
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() {
+                        _obscureConfirm = !_obscureConfirm;
+                      }),
+                      icon: Icon(
+                        _obscureConfirm
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 2),
+                    child: Column(
+                      children: [
+                        _passwordRuleItem(
+                          'At least 8 characters',
+                          hasMinLength,
+                        ),
+                        const SizedBox(height: 8),
+                        _passwordRuleItem(
+                          'Contains at least one letter',
+                          hasLetter,
+                        ),
+                        const SizedBox(height: 8),
+                        _passwordRuleItem(
+                          'Contains at least one number',
+                          hasNumber,
+                        ),
+                        const SizedBox(height: 8),
+                        _passwordRuleItem(
+                          'Contains at least one symbol',
+                          hasSymbol,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 35),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            AppColors.gold,
+                            Color(0xFFF3D268),
+                            AppColors.gold,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.gold.withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: AppColors.midnight,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                        onPressed: _isCreating ? null : _submitRegister,
+                        child: _isCreating
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.midnight,
+                                  ),
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Text('CREATE ACCOUNT'),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.arrow_forward, size: 18),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        Motion.pageRoute(
+                          builder: (_) => const LoginScreen(
+                            headerImageAsset: 'assets/images/login_screen.png',
+                          ),
+                        ),
+                      ),
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 13,
+                          ),
+                          children: const [
+                            TextSpan(text: 'Already have an account? '),
+                            TextSpan(
+                              text: 'Log In',
+                              style: TextStyle(
+                                color: AppColors.gold,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
