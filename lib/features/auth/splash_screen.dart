@@ -9,12 +9,16 @@ class SplashScreen extends StatefulWidget {
     super.key,
     this.logoAsset = 'assets/images/splash_logo.png',
     this.autoNavigate = true,
-    this.animationDuration = const Duration(milliseconds: 1200),
+    this.animationDuration = const Duration(milliseconds: 900),
+    this.progress,
+    this.statusText,
   });
 
   final String? logoAsset;
   final bool autoNavigate;
   final Duration animationDuration;
+  final double? progress;
+  final String? statusText;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -56,71 +60,81 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final progress = widget.progress?.clamp(0.0, 1.0);
+
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.midnight,
-      body: Stack(
-        children: [
-          const Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0x14000000),
-                    AppColors.midnight,
-                    AppColors.midnight,
+      body: MediaQuery.removeViewInsets(
+        removeBottom: true,
+        context: context,
+        child: Stack(
+          children: [
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x14000000),
+                      AppColors.midnight,
+                      AppColors.midnight,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    _LogoBadge(logoAsset: widget.logoAsset),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Midnight Barber',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.gold,
+                        fontFamily: 'PlayfairDisplay',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'PREMIUM GROOMING',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        letterSpacing: 3.5,
+                        color: Color(0x99F5F5F5),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    const Spacer(),
+                    _LoadingBar(
+                      animation: progress == null ? _controller : null,
+                      progress: progress,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      widget.statusText ?? 'v1.0.2',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0x66F5F5F5),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const Spacer(),
-                  _LogoBadge(logoAsset: widget.logoAsset),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Midnight Barber',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.gold,
-                      fontFamily: 'PlayfairDisplay',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'PREMIUM GROOMING',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      letterSpacing: 3.5,
-                      color: Color(0x99F5F5F5),
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                  const Spacer(),
-                  _LoadingBar(progress: _controller),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'v1.0.2',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0x66F5F5F5),
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -162,12 +176,15 @@ class _LogoBadge extends StatelessWidget {
 }
 
 class _LoadingBar extends StatelessWidget {
-  const _LoadingBar({required this.progress});
+  const _LoadingBar({this.animation, this.progress});
 
-  final Animation<double> progress;
+  final Animation<double>? animation;
+  final double? progress;
 
   @override
   Widget build(BuildContext context) {
+    final progressValue = progress;
+
     return Column(
       children: [
         Container(
@@ -177,32 +194,56 @@ class _LoadingBar extends StatelessWidget {
             color: AppColors.gold.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(999),
           ),
-          child: AnimatedBuilder(
-            animation: progress,
-            builder: (context, child) {
-              return FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: progress.value,
-                child: child,
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                gradient: const LinearGradient(
-                  colors: [AppColors.gold, Color(0xFFF9E79F)],
+          child: progressValue != null
+              ? TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: progressValue),
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOut,
+                  builder: (context, value, child) {
+                    return FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: value,
+                      child: child,
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      gradient: const LinearGradient(
+                        colors: [AppColors.gold, Color(0xFFF9E79F)],
+                      ),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x80D4AF37), blurRadius: 10),
+                      ],
+                    ),
+                  ),
+                )
+              : AnimatedBuilder(
+                  animation: animation!,
+                  builder: (context, child) {
+                    return FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: animation!.value,
+                      child: child,
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      gradient: const LinearGradient(
+                        colors: [AppColors.gold, Color(0xFFF9E79F)],
+                      ),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x80D4AF37), blurRadius: 10),
+                      ],
+                    ),
+                  ),
                 ),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x80D4AF37), blurRadius: 10),
-                ],
-              ),
-            ),
-          ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Loading assets...',
-          style: TextStyle(
+        Text(
+          progressValue == null ? 'Loading assets...' : 'Loading...',
+          style: const TextStyle(
             fontSize: 11,
             color: Color(0x66F5F5F5),
             fontFamily: 'Inter',

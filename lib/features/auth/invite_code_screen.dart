@@ -6,6 +6,7 @@ import 'package:barber_pro/core/motion.dart';
 import 'package:barber_pro/core/theme/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'verify_email_screen.dart';
 
@@ -25,17 +26,21 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
   final _shopLocationController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _smartEmailController = TextEditingController();
   TextEditingController? _readOnlyEmailController;
 
   bool _loading = false;
   bool _codeVerified = false;
   bool _existingAccount = false;
+  bool _smartGateCompleted = false;
+  bool _resolvingAccountPath = false;
   bool _inviteFieldFocused = false;
   bool _obscurePassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
   bool _ownerSubmitted = false;
   String? _codeErrorText;
+  String? _smartEmailErrorText;
 
   _InvitePayload? _invite;
 
@@ -48,11 +53,13 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     _shopLocationController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
+    _smartEmailController.dispose();
     _readOnlyEmailController?.dispose();
     super.dispose();
   }
 
   Future<void> _verifyCode() async {
+    FocusScope.of(context).unfocus();
     setState(() => _codeErrorText = null);
     final code = _extractInviteCode(_codeController.text);
     if (code.length < 6) {
@@ -67,58 +74,61 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     try {
       final invite = await _findInviteByCode(code);
       _validateInvite(invite);
-
-      final existingAccount = await _checkIfAuthAccountExists(invite.email);
-
-      _invite = invite;
-      _existingAccount = existingAccount;
+      final hydratedInvite = await _withResolvedBranchName(invite);
+      _invite = hydratedInvite;
       _codeVerified = true;
+      _smartGateCompleted = false;
+      _smartEmailErrorText = null;
       _readOnlyEmailController?.dispose();
-      _readOnlyEmailController = TextEditingController(text: invite.email);
+      _readOnlyEmailController = TextEditingController(
+        text: hydratedInvite.email,
+      );
+      _smartEmailController.text = hydratedInvite.email;
 
       final currentUser = FirebaseAuth.instance.currentUser;
       final currentEmail = currentUser?.email?.trim().toLowerCase();
-      if (invite.role != 'owner' &&
+      if (hydratedInvite.role != 'owner' &&
           currentUser != null &&
           currentEmail != null &&
-          currentEmail == invite.email) {
+          currentEmail == hydratedInvite.email) {
         final verified = await _isEmailVerified(currentUser);
         if (!verified) {
           await PendingOnboardingService.savePendingInvite(
             user: currentUser,
-            inviteCollection: invite.collection,
-            inviteId: invite.reference.id,
-            code: invite.code,
-            role: invite.role,
-            branchId: invite.branchId,
-            shopId: invite.shopId,
-            ownerId: invite.ownerId,
-            shopName: invite.shopName,
-            shopLocation: invite.shopLocation,
+            inviteCollection: hydratedInvite.collection,
+            inviteId: hydratedInvite.reference.id,
+            code: hydratedInvite.code,
+            role: hydratedInvite.role,
+            branchId: hydratedInvite.branchId,
+            shopId: hydratedInvite.shopId,
+            ownerId: hydratedInvite.ownerId,
+            shopName: hydratedInvite.shopName,
+            shopLocation: hydratedInvite.shopLocation,
           );
           await _routeAfterAuth(currentUser);
           return;
         }
         await _applyInviteToUser(
           user: currentUser,
-          invite: invite,
+          invite: hydratedInvite,
           isNewAccount: false,
         );
         await _routeAfterAuth(currentUser);
         return;
       }
 
-      if (invite.role == 'owner') {
+      if (hydratedInvite.role == 'owner') {
         if (_shopNameController.text.trim().isEmpty) {
-          _shopNameController.text = invite.shopName ?? '';
+          _shopNameController.text = hydratedInvite.shopName ?? '';
         }
         if (_shopLocationController.text.trim().isEmpty) {
-          _shopLocationController.text = invite.shopLocation ?? '';
+          _shopLocationController.text = hydratedInvite.shopLocation ?? '';
         }
       }
-      if (!_existingAccount) {
-        _shopNameController.text = invite.shopName ?? '';
-        _shopLocationController.text = invite.shopLocation ?? '';
+      final hintedExisting = hydratedInvite.accountExists ?? false;
+      if (!hintedExisting) {
+        _shopNameController.text = hydratedInvite.shopName ?? '';
+        _shopLocationController.text = hydratedInvite.shopLocation ?? '';
       }
       if (mounted) setState(() {});
     } catch (e) {
@@ -133,22 +143,236 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     }
   }
 
-  Future<bool> _checkIfAuthAccountExists(String email) async {
+  Future<_InvitePayload> _withResolvedBranchName(_InvitePayload invite) async {
+    if (invite.role != 'barber') return invite;
+    final existingName = (invite.shopName ?? '').trim();
+    if (existingName.isNotEmpty) return invite;
+
+    final targetShopId = (invite.branchId ?? '').trim().isNotEmpty
+        ? invite.branchId!.trim()
+        : (invite.shopId ?? '').trim();
+    if (targetShopId.isEmpty) return invite;
+
+    try {
+      final shopDoc = await FirebaseFirestore.instance
+          .collection('shops')
+          .doc(targetShopId)
+          .get();
+      final data = shopDoc.data() ?? const <String, dynamic>{};
+      final resolvedName =
+          ((data['name'] as String?) ??
+                  (data['shopName'] as String?) ??
+                  (data['branchName'] as String?) ??
+                  '')
+              .trim();
+      if (resolvedName.isEmpty) return invite;
+      return invite.copyWith(shopName: resolvedName);
+    } catch (_) {
+      return invite;
+    }
+  }
+
+  String _displayBranchName(_InvitePayload invite) {
+    final fromInvite = (invite.shopName ?? '').trim();
+    if (fromInvite.isNotEmpty) return fromInvite;
+    final fromShopId = (invite.shopId ?? '').trim();
+    if (fromShopId.isNotEmpty) return fromShopId;
+    final fromBranchId = (invite.branchId ?? '').trim();
+    if (fromBranchId.isNotEmpty) return fromBranchId;
+    return 'Assigned Branch';
+  }
+
+  Future<bool?> _checkIfAuthAccountExists(String email) async {
+    final normalizedEmail = email.trim().toLowerCase();
     final currentUser = FirebaseAuth.instance.currentUser;
     final currentEmail = currentUser?.email?.trim().toLowerCase();
-    if (currentEmail != null && currentEmail == email) {
+    if (currentEmail != null && currentEmail == normalizedEmail) {
       return true;
     }
+    final hasIdentityDoc = await _hasIdentityUserDocByEmail(normalizedEmail);
+    if (hasIdentityDoc != null) return hasIdentityDoc;
 
+    // Secondary probe against Firebase Auth so legacy accounts (Auth exists but
+    // users doc missing) are still auto-detected as "existing account".
+    final probe = await _probeAuthAccountExistsByEmail(normalizedEmail);
+    if (probe != null) return probe;
+
+    // Strong fallback probe: use a secondary Auth instance to try creating the
+    // invited email, then immediately delete if created. This avoids touching
+    // the main app auth state and gives a deterministic exists/new answer.
+    final createProbe = await _probeAuthEmailExistsViaCreateDelete(
+      normalizedEmail,
+    );
+    if (createProbe != null) return createProbe;
+
+    return null;
+  }
+
+  Future<void> _resolveAccountPathForInvite({
+    required _InvitePayload invite,
+    bool preferInviteHint = true,
+  }) async {
+    if (!mounted) return;
+    setState(() => _resolvingAccountPath = true);
+    try {
+      final exists = await _determineExistingAccountState(
+        invite,
+        preferInviteHint: preferInviteHint,
+      );
+      if (!mounted) return;
+      setState(() {
+        _existingAccount = exists;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _resolvingAccountPath = false);
+      }
+    }
+  }
+
+  Future<bool> _determineExistingAccountState(
+    _InvitePayload invite, {
+    bool preferInviteHint = true,
+  }) async {
+    final hint = invite.accountExists;
+    if (preferInviteHint && hint != null) {
+      return hint;
+    }
+
+    final fromLiveChecks = await _checkIfAuthAccountExists(invite.email);
+    if (fromLiveChecks != null) return fromLiveChecks;
+
+    if (hint != null) return hint;
+    // If detection is unknown, prefer existing-account path.
+    // Existing users can continue immediately; new users can switch via the
+    // "Don't have an account? Sign up & Join" link.
+    return true;
+  }
+
+  Future<void> _runSmartGateCheck(_InvitePayload invite) async {
+    final typedEmail = _smartEmailController.text.trim().toLowerCase();
+    final invitedEmail = invite.email.trim().toLowerCase();
+    if (typedEmail.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _smartEmailErrorText = 'Enter your email';
+      });
+      return;
+    }
+    if (typedEmail != invitedEmail) {
+      if (!mounted) return;
+      setState(() {
+        _smartEmailErrorText = 'Use the invited email for this code';
+      });
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _smartEmailErrorText = null);
+    await _resolveAccountPathForInvite(invite: invite, preferInviteHint: false);
+    if (!mounted) return;
+    setState(() => _smartGateCompleted = true);
+  }
+
+  Future<bool?> _hasIdentityUserDocByEmail(String email) async {
     try {
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .where('email', isEqualTo: email)
+          .where('email', isEqualTo: email.trim().toLowerCase())
           .limit(1)
           .get();
       return userDoc.docs.isNotEmpty;
-    } on FirebaseException catch (_) {
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') return null;
       return false;
+    }
+  }
+
+  Future<bool?> _probeAuthAccountExistsByEmail(String email) async {
+    final auth = FirebaseAuth.instance;
+    final previousUser = auth.currentUser;
+    final probePassword =
+        '__probe__${DateTime.now().microsecondsSinceEpoch}__X9!';
+
+    try {
+      final credential = await auth.signInWithEmailAndPassword(
+        email: email,
+        password: probePassword,
+      );
+
+      // Extremely unlikely, but avoid leaking probe-auth session if it ever
+      // succeeds for any reason.
+      final signedInUid = credential.user?.uid;
+      final previousUid = previousUser?.uid;
+      if (signedInUid != null && signedInUid != previousUid) {
+        await auth.signOut();
+      }
+      return true;
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'wrong-password':
+        case 'user-disabled':
+        case 'too-many-requests':
+        case 'operation-not-allowed':
+          return true;
+        case 'user-not-found':
+          return false;
+        case 'invalid-credential':
+          // With email-enumeration protection this is often returned for
+          // both existing and new accounts.
+          return null;
+        case 'network-request-failed':
+          return null;
+        default:
+          return null;
+      }
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool?> _probeAuthEmailExistsViaCreateDelete(String email) async {
+    if (email.isEmpty) return null;
+
+    FirebaseApp? probeApp;
+    try {
+      final options = Firebase.app().options;
+      final appName = 'invite_probe_${DateTime.now().microsecondsSinceEpoch}';
+      probeApp = await Firebase.initializeApp(name: appName, options: options);
+      final probeAuth = FirebaseAuth.instanceFor(app: probeApp);
+      final probePassword =
+          'P@ssw0rd_${DateTime.now().microsecondsSinceEpoch}Aa!';
+
+      try {
+        final credential = await probeAuth.createUserWithEmailAndPassword(
+          email: email,
+          password: probePassword,
+        );
+        final createdUser = credential.user;
+        if (createdUser != null) {
+          await createdUser.delete();
+        }
+        return false;
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'email-already-in-use') return true;
+        if (e.code == 'invalid-email') return null;
+        if (e.code == 'network-request-failed') return null;
+        if (e.code == 'too-many-requests') return null;
+        if (e.code == 'operation-not-allowed') return null;
+        return null;
+      } finally {
+        try {
+          await probeAuth.signOut();
+        } catch (_) {}
+      }
+    } catch (_) {
+      return null;
+    } finally {
+      if (probeApp != null) {
+        try {
+          await probeApp.delete();
+        } catch (_) {}
+      }
     }
   }
 
@@ -267,6 +491,20 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
         _showMessage('No account found for this email. Create account below.');
         return;
       }
+      if (e.code == 'invalid-credential') {
+        final hasIdentity = await _hasIdentityUserDocByEmail(invite.email);
+        if (hasIdentity == false) {
+          if (mounted) {
+            setState(() {
+              _existingAccount = false;
+            });
+          }
+          _showMessage(
+            'No account found for this email. Create account below.',
+          );
+          return;
+        }
+      }
       _showMessage('[${e.code}] ${e.message ?? 'Sign in failed'}');
       if (mounted) {
         showDevAuthError(context, e, scope: 'invite_signin_join');
@@ -382,9 +620,14 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     final refreshed = FirebaseAuth.instance.currentUser ?? user;
     if (!mounted) return;
     if (!verified) {
+      final isLockedInviteRole =
+          _invite?.role == 'barber' || _invite?.role == 'owner';
       Navigator.of(context).pushAndRemoveUntil(
         Motion.pageRoute(
-          builder: (_) => VerifyEmailScreen(email: refreshed.email ?? ''),
+          builder: (_) => VerifyEmailScreen(
+            email: refreshed.email ?? '',
+            allowChangeEmail: !isLockedInviteRole,
+          ),
         ),
         (_) => false,
       );
@@ -455,9 +698,9 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
       patch['ownerId'] = invite.ownerId ?? '';
       patch['isActive'] = true;
     } else if (invite.role == 'owner') {
-      final shopId = (invite.shopId?.trim().isNotEmpty ?? false)
-          ? invite.shopId!.trim()
-          : user.uid;
+      // Owner transition always creates/uses own shop root by uid (fresh start).
+      // This avoids permission-denied on foreign/pre-provisioned shop IDs.
+      final shopId = user.uid;
       if (!isNewAccount) {
         await _cleanPreviousBarberEmploymentForOwnerTransition(
           user.uid,
@@ -809,194 +1052,187 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: MediaQuery(
-                                    data: media.copyWith(
-                                      textScaler: const TextScaler.linear(1.0),
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.key_rounded,
-                                          size: 32,
-                                          color: AppColors.gold,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.key_rounded,
+                                        size: 32,
+                                        color: AppColors.gold,
+                                      ),
+                                      const SizedBox(height: 14),
+                                      const Text(
+                                        'Enter Invite Code',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontFamily: 'PlayfairDisplay',
+                                          fontSize: 32,
+                                          height: 1.0,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.text,
                                         ),
-                                        const SizedBox(height: 14),
-                                        const Text(
-                                          'Enter Invite Code',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontFamily: 'PlayfairDisplay',
-                                            fontSize: 32,
-                                            height: 1.0,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.text,
+                                      ),
+                                      const SizedBox(height: 14),
+                                      Text(
+                                        'Verify your professional status with\nthe code provided by your shop\nowner.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.52,
                                           ),
+                                          fontSize: 13,
+                                          height: 1.5,
                                         ),
-                                        const SizedBox(height: 14),
-                                        Text(
-                                          'Verify your professional status with\nthe code provided by your shop\nowner.',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.52,
+                                      ),
+                                      const SizedBox(height: 24),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 58,
+                                        child: AnimatedContainer(
+                                          duration:
+                                              Motion.microAnimationDuration,
+                                          curve: Motion.microAnimationCurve,
+                                          clipBehavior: Clip.antiAlias,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
                                             ),
-                                            fontSize: 13,
-                                            height: 1.5,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 24),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: 58,
-                                          child: AnimatedContainer(
-                                            duration:
-                                                Motion.microAnimationDuration,
-                                            curve: Motion.microAnimationCurve,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              border: Border.all(
+                                            border: Border.all(
+                                              color: _codeErrorText == null
+                                                  ? (_inviteFieldFocused
+                                                        ? AppColors.gold
+                                                        : Colors.white
+                                                              .withValues(
+                                                                alpha: 0.1,
+                                                              ))
+                                                  : const Color(0xFFDC2626),
+                                              width: _inviteFieldFocused
+                                                  ? 1.15
+                                                  : 1,
+                                            ),
+                                            color: const Color(0xFF121620),
+                                            boxShadow: [
+                                              BoxShadow(
                                                 color: _codeErrorText == null
-                                                    ? (_inviteFieldFocused
-                                                          ? AppColors.gold
-                                                          : Colors.white
-                                                                .withValues(
-                                                                  alpha: 0.1,
-                                                                ))
-                                                    : const Color(0xFFDC2626),
-                                                width: _inviteFieldFocused
-                                                    ? 1.15
-                                                    : 1,
+                                                    ? AppColors.gold.withValues(
+                                                        alpha:
+                                                            _inviteFieldFocused
+                                                            ? 0.18
+                                                            : 0.08,
+                                                      )
+                                                    : const Color(0x33DC2626),
+                                                blurRadius: _inviteFieldFocused
+                                                    ? 18
+                                                    : 14,
+                                                offset: const Offset(0, 6),
                                               ),
-                                              color: const Color(0xFF121620),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: _codeErrorText == null
-                                                      ? AppColors.gold.withValues(
-                                                          alpha:
-                                                              _inviteFieldFocused
-                                                              ? 0.18
-                                                              : 0.08,
-                                                        )
-                                                      : const Color(0x33DC2626),
-                                                  blurRadius:
-                                                      _inviteFieldFocused
-                                                      ? 18
-                                                      : 14,
-                                                  offset: const Offset(0, 6),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Focus(
-                                              onFocusChange: (focused) {
-                                                if (!mounted) return;
-                                                setState(() {
-                                                  _inviteFieldFocused = focused;
-                                                });
-                                              },
-                                              child: TextField(
-                                                controller: _codeController,
-                                                onChanged: _onCodeChanged,
-                                                textCapitalization:
-                                                    TextCapitalization
-                                                        .characters,
-                                                enabled: !_loading,
-                                                textAlign: TextAlign.center,
-                                                style: const TextStyle(
-                                                  color: AppColors.text,
-                                                  fontSize: 22,
-                                                  letterSpacing: 2.6,
+                                            ],
+                                          ),
+                                          child: Focus(
+                                            onFocusChange: (focused) {
+                                              if (!mounted) return;
+                                              setState(() {
+                                                _inviteFieldFocused = focused;
+                                              });
+                                            },
+                                            child: TextField(
+                                              controller: _codeController,
+                                              onChanged: _onCodeChanged,
+                                              textCapitalization:
+                                                  TextCapitalization.characters,
+                                              readOnly: _loading,
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                color: AppColors.text,
+                                                fontSize: 22,
+                                                letterSpacing: 2.6,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                              decoration: InputDecoration(
+                                                hintText: 'AB12 - CD34',
+                                                hintStyle: TextStyle(
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.28),
+                                                  fontSize: 20,
+                                                  letterSpacing: 2.2,
                                                   fontWeight: FontWeight.w600,
                                                 ),
-                                                decoration: InputDecoration(
-                                                  hintText: 'XXXX - XXXX',
-                                                  hintStyle: TextStyle(
-                                                    color: Colors.white
-                                                        .withValues(
-                                                          alpha: 0.28,
-                                                        ),
-                                                    fontSize: 20,
-                                                    letterSpacing: 2.2,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                  isDense: true,
-                                                  border: InputBorder.none,
-                                                  contentPadding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 14,
-                                                        vertical: 16,
-                                                      ),
-                                                ),
+                                                isDense: true,
+                                                border: InputBorder.none,
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 14,
+                                                      vertical: 16,
+                                                    ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                        if (_codeErrorText != null) ...[
-                                          const SizedBox(height: 10),
-                                          Text(
-                                            _codeErrorText!,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              color: Color(0xFFEF4444),
-                                              fontSize: 11,
-                                              height: 1.4,
-                                            ),
-                                          ),
-                                        ],
-                                        const SizedBox(height: 18),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: 56,
-                                          child: ElevatedButton(
-                                            onPressed: _loading
-                                                ? null
-                                                : _verifyCode,
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.gold,
-                                              foregroundColor: const Color(
-                                                0xFF05070A,
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(18),
-                                              ),
-                                              elevation: 8,
-                                              shadowColor: AppColors.gold
-                                                  .withValues(alpha: 0.28),
-                                              textStyle: const TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                letterSpacing: 2.3,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              _loading
-                                                  ? 'CHECKING...'
-                                                  : 'VERIFY & PROCEED',
-                                            ),
+                                      ),
+                                      if (_codeErrorText != null) ...[
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          _codeErrorText!,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: Color(0xFFEF4444),
+                                            fontSize: 11,
+                                            height: 1.4,
                                           ),
                                         ),
-                                        if (!compact) ...[
-                                          const SizedBox(height: 10),
-                                          TextButton(
-                                            onPressed: _loading
-                                                ? null
-                                                : () => Navigator.of(
-                                                    context,
-                                                  ).maybePop(),
-                                            style: TextButton.styleFrom(
-                                              foregroundColor: Colors.white
-                                                  .withValues(alpha: 0.45),
-                                            ),
-                                            child: const Text(
-                                              'Cancel',
-                                              style: TextStyle(fontSize: 15),
-                                            ),
-                                          ),
-                                        ],
                                       ],
-                                    ),
+                                      const SizedBox(height: 18),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 56,
+                                        child: ElevatedButton(
+                                          onPressed: _loading
+                                              ? null
+                                              : _verifyCode,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.gold,
+                                            foregroundColor: const Color(
+                                              0xFF05070A,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                            ),
+                                            elevation: 8,
+                                            shadowColor: AppColors.gold
+                                                .withValues(alpha: 0.28),
+                                            textStyle: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 2.3,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _loading
+                                                ? 'CHECKING...'
+                                                : 'VERIFY & PROCEED',
+                                          ),
+                                        ),
+                                      ),
+                                      if (!compact) ...[
+                                        const SizedBox(height: 10),
+                                        TextButton(
+                                          onPressed: _loading
+                                              ? null
+                                              : () => Navigator.of(
+                                                  context,
+                                                ).maybePop(),
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: Colors.white
+                                                .withValues(alpha: 0.45),
+                                          ),
+                                          child: const Text(
+                                            'Cancel',
+                                            style: TextStyle(fontSize: 15),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
                               ),
@@ -1008,6 +1244,8 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   ),
                 ),
               )
+            : !_smartGateCompleted
+            ? _buildSmartGate(invite)
             : (invite.role == 'barber' && !_existingAccount)
             ? _buildLuxuryBarberRegistration(invite)
             : (invite.role == 'barber' && _existingAccount)
@@ -1192,9 +1430,226 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     );
   }
 
+  Widget _buildSmartGate(_InvitePayload invite) {
+    final roleLabel = invite.role == 'owner'
+        ? 'OWNER SETUP'
+        : invite.role == 'barber'
+        ? 'BARBER INVITE'
+        : invite.role.toUpperCase();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0B0F1A),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF121620),
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(
+                    color: AppColors.gold.withValues(alpha: 0.45),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Icon(
+                        Icons.email_rounded,
+                        size: 34,
+                        color: AppColors.gold.withValues(alpha: 0.95),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Center(
+                      child: Text(
+                        'Step 2: Smart Gate',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'PlayfairDisplay',
+                          fontSize: 31,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.text,
+                          height: 1.05,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: Text(
+                        'Enter your invited email, then we will auto-select\nthe correct screen (Sign in or Sign up).',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.58),
+                          fontSize: 13,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F1422),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            roleLabel,
+                            style: TextStyle(
+                              color: AppColors.gold.withValues(alpha: 0.9),
+                              fontSize: 10,
+                              letterSpacing: 2.2,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            'Code: ${invite.code}',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.52),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Email Address',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.72),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _smartEmailController,
+                      enabled: !_resolvingAccountPath,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _runSmartGateCheck(invite),
+                      onChanged: (_) {
+                        if (_smartEmailErrorText != null) {
+                          setState(() => _smartEmailErrorText = null);
+                        }
+                      },
+                      style: const TextStyle(
+                        color: AppColors.text,
+                        fontSize: 15,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'your@email.com',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.28),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF121620),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: _smartEmailErrorText == null
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : const Color(0xFFEF4444),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: _smartEmailErrorText == null
+                                ? AppColors.gold
+                                : const Color(0xFFEF4444),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_smartEmailErrorText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _smartEmailErrorText!,
+                        style: const TextStyle(
+                          color: Color(0xFFEF4444),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Must match invited email: ${invite.email}',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 22),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 58,
+                      child: ElevatedButton(
+                        onPressed: _resolvingAccountPath
+                            ? null
+                            : () => _runSmartGateCheck(invite),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.gold,
+                          foregroundColor: const Color(0xFF05070A),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2.2,
+                          ),
+                        ),
+                        child: _resolvingAccountPath
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF05070A),
+                                  ),
+                                ),
+                              )
+                            : const Text('NEXT'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildLuxuryOwnerExistingAccount(_InvitePayload invite) {
     final shopName = (invite.shopName ?? '').trim().isEmpty
-        ? 'Sovereign Heights'
+        ? 'e.g. Sovereign Heights'
         : invite.shopName!.trim();
 
     return Scaffold(
@@ -1218,7 +1673,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
               Center(
                 child: Text(
                   'Finalize your administrative credentials to begin\nmanaging your barbershop.',
@@ -1373,7 +1828,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 controller: _shopLocationController,
                 style: const TextStyle(color: AppColors.text, fontSize: 15),
                 decoration: InputDecoration(
-                  hintText: 'Search address or district',
+                  hintText: 'e.g. 123 Main St, Cityville',
                   filled: true,
                   fillColor: const Color(0xFF121620),
                   hintStyle: TextStyle(
@@ -1416,7 +1871,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 obscureText: _obscurePassword,
                 style: const TextStyle(color: AppColors.text, fontSize: 15),
                 decoration: InputDecoration(
-                  hintText: '••••••••••••',
+                  hintText: 'password',
                   filled: true,
                   fillColor: const Color(0xFF121620),
                   hintStyle: TextStyle(
@@ -1464,7 +1919,22 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
+              Center(
+                child: TextButton(
+                  onPressed: _loading
+                      ? null
+                      : () => setState(() => _existingAccount = false),
+                  child: Text(
+                    "Don't have an account? Sign up & Join",
+                    style: TextStyle(
+                      color: AppColors.gold.withValues(alpha: 0.95),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
               Center(
                 child: TextButton(
                   onPressed: _loading
@@ -1590,10 +2060,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       ),
                       const Spacer(),
                       Text(
-                        ((invite.shopName ?? '').trim().isEmpty
-                                ? 'Knightsbridge Elite'
-                                : invite.shopName!)
-                            .trim(),
+                        _displayBranchName(invite),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
@@ -1814,30 +2281,28 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              hasLetter
-                                  ? Icons.check_rounded
-                                  : Icons.cancel_rounded,
-                              size: 16,
-                              color: hasLetter
-                                  ? AppColors.gold
-                                  : Colors.white.withValues(alpha: 0.4),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Contains one letter',
-                              style: TextStyle(
-                                color: hasLetter
-                                    ? AppColors.gold
-                                    : Colors.white.withValues(alpha: 0.4),
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
+                  Row(
+                    children: [
+                      Icon(
+                        hasLetter ? Icons.check_rounded : Icons.cancel_rounded,
+                        size: 16,
+                        color: hasLetter
+                            ? AppColors.gold
+                            : Colors.white.withValues(alpha: 0.4),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Contains one letter',
+                        style: TextStyle(
+                          color: hasLetter
+                              ? AppColors.gold
+                              : Colors.white.withValues(alpha: 0.4),
+                          fontSize: 11,
                         ),
-                        const SizedBox(height: 8),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Icon(
@@ -1914,13 +2379,11 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
               child: TextButton(
                 onPressed: _loading
                     ? null
-                    : () => setState(() {
-                        _existingAccount = true;
-                      }),
-                child: const Text(
-                  'Already have account? Sign in & Join',
+                    : () => setState(() => _existingAccount = true),
+                child: Text(
+                  'Already have an account? Sign in & Join',
                   style: TextStyle(
-                    color: AppColors.gold,
+                    color: AppColors.gold.withValues(alpha: 0.95),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1950,11 +2413,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
   }
 
   Widget _buildLuxuryBarberExistingAccount(_InvitePayload invite) {
-    final branchName =
-        ((invite.shopName ?? '').trim().isEmpty
-                ? 'Mayfair Sanctuary'
-                : invite.shopName!)
-            .trim();
+    final branchName = _displayBranchName(invite);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F1A),
@@ -2179,6 +2638,21 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     child: TextButton(
                       onPressed: _loading
                           ? null
+                          : () => setState(() => _existingAccount = false),
+                      child: Text(
+                        "Don't have an account? Sign up & Join",
+                        style: TextStyle(
+                          color: AppColors.gold.withValues(alpha: 0.95),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: TextButton(
+                      onPressed: _loading
+                          ? null
                           : () => Navigator.of(context).maybePop(),
                       child: Text(
                         'Cancel',
@@ -2206,544 +2680,556 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     final ownerHasSymbol = RegExp(r'[^A-Za-z0-9]').hasMatch(ownerPassword);
 
     return SafeArea(
-      child: MediaQuery(
-        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              inputDecorationTheme: InputDecorationTheme(
-                filled: true,
-                fillColor: const Color(0xFF121620),
-                hintStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.28),
-                  fontSize: 17,
-                  fontWeight: FontWeight.w500,
-                ),
-                errorStyle: const TextStyle(color: Color(0xFFFF8A80)),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 18,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    width: 1,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: AppColors.gold.withValues(alpha: 1),
-                    width: 1,
-                  ),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFFFF8A80)),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFFFF8A80)),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            inputDecorationTheme: InputDecorationTheme(
+              filled: true,
+              fillColor: const Color(0xFF121620),
+              hintStyle: TextStyle(
+                color: Colors.white.withValues(alpha: 0.28),
+                fontSize: 17,
+                fontWeight: FontWeight.w500,
+              ),
+              errorStyle: const TextStyle(color: Color(0xFFFF8A80)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 18,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  width: 1,
                 ),
               ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: AppColors.gold.withValues(alpha: 1),
+                  width: 1,
+                ),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFFF8A80)),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFFF8A80)),
+              ),
             ),
-            child: Form(
-              key: _ownerFormKey,
-              autovalidateMode: _ownerSubmitted
-                  ? AutovalidateMode.onUserInteraction
-                  : AutovalidateMode.disabled,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Center(
-                    child: Text(
-                      'Set Up Your Branch',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'PlayfairDisplay',
-                        fontSize: 31,
-                        fontWeight: FontWeight.w700,
-                        height: 1.08,
-                        color: AppColors.gold,
-                      ),
+          ),
+          child: Form(
+            key: _ownerFormKey,
+            autovalidateMode: _ownerSubmitted
+                ? AutovalidateMode.onUserInteraction
+                : AutovalidateMode.disabled,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Center(
+                  child: Text(
+                    'Set Up Your Branch',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'PlayfairDisplay',
+                      fontSize: 31,
+                      fontWeight: FontWeight.w700,
+                      height: 1.08,
+                      color: AppColors.gold,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Text(
-                      'Establish your domain and begin your journey\nas an elite owner.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.60),
-                        fontSize: 14,
-                        height: 1.55,
-                      ),
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: Text(
+                    'Establish your domain and begin your journey\nas an elite owner.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.60),
+                      fontSize: 14,
+                      height: 1.55,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF121620),
-                      borderRadius: BorderRadius.circular(26),
-                      border: Border.all(
-                        color: AppColors.gold.withValues(alpha: 0.55),
-                        width: 1.1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(
-                                    Icons.verified_rounded,
-                                    color: AppColors.gold,
-                                    size: 17,
-                                  ),
-                                  SizedBox(width: 10),
-                                  Text(
-                                    'INVITE TYPE: OWNER',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.lock_rounded,
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                    size: 17,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      invite.email,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.66,
-                                        ),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          width: 58,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.gold.withValues(alpha: 0.12),
-                            border: Border.all(
-                              color: AppColors.gold.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.workspace_premium_rounded,
-                            color: AppColors.gold,
-                            size: 30,
-                          ),
-                        ),
-                      ],
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF121620),
+                    borderRadius: BorderRadius.circular(26),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.55),
+                      width: 1.1,
                     ),
                   ),
-                  const SizedBox(height: 26),
-                  Row(
+                  child: Row(
                     children: [
                       Expanded(
-                        child: Divider(
-                          color: AppColors.gold.withValues(alpha: 0.34),
-                          thickness: 1,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(
-                          'BRANCH INFORMATION',
-                          style: TextStyle(
-                            color: AppColors.gold.withValues(alpha: 0.98),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 3.4,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: AppColors.gold.withValues(alpha: 0.34),
-                          thickness: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Branch Name',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _shopNameController,
-                    style: const TextStyle(color: AppColors.text, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Sovereign Heights',
-                      prefixIcon: Icon(
-                        Icons.storefront_rounded,
-                        color: AppColors.gold.withValues(alpha: 0.75),
-                      ),
-                    ),
-                    validator: (value) {
-                      final v = (value ?? '').trim();
-                      if (v.isEmpty) return 'Branch name is required';
-                      if (v.length < 2) return 'Enter a valid branch name';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Branch Location',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _shopLocationController,
-                    style: const TextStyle(color: AppColors.text, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'Write branch location',
-                      prefixIcon: Icon(
-                        Icons.location_on_rounded,
-                        color: AppColors.gold.withValues(alpha: 0.75),
-                      ),
-                    ),
-                    validator: (value) {
-                      final v = (value ?? '').trim();
-                      if (v.isEmpty) return 'Branch location is required';
-                      if (v.length < 2) return 'Enter a valid location';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 26),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Divider(
-                          color: AppColors.gold.withValues(alpha: 0.34),
-                          thickness: 1,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(
-                          'ACCOUNT DETAILS',
-                          style: TextStyle(
-                            color: AppColors.gold.withValues(alpha: 0.98),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 3.4,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: AppColors.gold.withValues(alpha: 0.34),
-                          thickness: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Full Name',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _fullNameController,
-                    style: const TextStyle(color: AppColors.text, fontSize: 14),
-                    decoration: const InputDecoration(
-                      hintText: 'Ex. Alexander Sterling',
-                    ),
-                    validator: (value) {
-                      final v = (value ?? '').trim();
-                      if (v.isEmpty) return 'Full name is required';
-                      if (v.length < 2) return 'Enter your full name';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Password',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _newPasswordController,
-                    obscureText: _obscureNewPassword,
-                    style: const TextStyle(color: AppColors.text, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'password',
-                      suffixIcon: IconButton(
-                        onPressed: () => setState(
-                          () => _obscureNewPassword = !_obscureNewPassword,
-                        ),
-                        icon: Icon(
-                          _obscureNewPassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: Colors.white.withValues(alpha: 0.45),
-                        ),
-                      ),
-                    ),
-                    onChanged: (_) {
-                      setState(() {});
-                      if (_confirmPasswordController.text.isNotEmpty) {
-                        _ownerFormKey.currentState?.validate();
-                      }
-                    },
-                    validator: (value) {
-                      final password = value ?? '';
-                      if (password.isEmpty) return 'Password is required';
-                      if (password.length < 8) {
-                        return 'Use at least 8 characters';
-                      }
-                      if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
-                        return 'Include at least one letter';
-                      }
-                      if (!RegExp(r'[0-9]').hasMatch(password)) {
-                        return 'Include at least one number';
-                      }
-                      if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
-                        return 'Include at least one symbol';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Confirm Password',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscureConfirmPassword,
-                    style: const TextStyle(color: AppColors.text, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'confirm password',
-                      suffixIcon: IconButton(
-                        onPressed: () => setState(
-                          () => _obscureConfirmPassword =
-                              !_obscureConfirmPassword,
-                        ),
-                        icon: Icon(
-                          _obscureConfirmPassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: Colors.white.withValues(alpha: 0.45),
-                        ),
-                      ),
-                    ),
-                    validator: (value) {
-                      final confirm = value ?? '';
-                      if (confirm.isEmpty) return 'Confirm your password';
-                      if (confirm != _newPasswordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
-                    onFieldSubmitted: (_) => _createAndJoin(),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 2),
-                    child: Column(
-                      children: [
-                        Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              ownerHasMinLength
-                                  ? Icons.check_rounded
-                                  : Icons.cancel_rounded,
-                              size: 16,
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.verified_rounded,
+                                  color: AppColors.gold,
+                                  size: 17,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  'INVITE TYPE: OWNER',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.lock_rounded,
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  size: 17,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    invite.email,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.66,
+                                      ),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.gold.withValues(alpha: 0.12),
+                          border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.workspace_premium_rounded,
+                          color: AppColors.gold,
+                          size: 30,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 26),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        color: AppColors.gold.withValues(alpha: 0.34),
+                        thickness: 1,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        'BRANCH INFORMATION',
+                        style: TextStyle(
+                          color: AppColors.gold.withValues(alpha: 0.98),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 3.4,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: AppColors.gold.withValues(alpha: 0.34),
+                        thickness: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Branch Name',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _shopNameController,
+                  style: const TextStyle(color: AppColors.text, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Sovereign Heights',
+                    prefixIcon: Icon(
+                      Icons.storefront_rounded,
+                      color: AppColors.gold.withValues(alpha: 0.75),
+                    ),
+                  ),
+                  validator: (value) {
+                    final v = (value ?? '').trim();
+                    if (v.isEmpty) return 'Branch name is required';
+                    if (v.length < 2) return 'Enter a valid branch name';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Branch Location',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _shopLocationController,
+                  style: const TextStyle(color: AppColors.text, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. 123 Main St, Cityville',
+                    prefixIcon: Icon(
+                      Icons.location_on_rounded,
+                      color: AppColors.gold.withValues(alpha: 0.75),
+                    ),
+                  ),
+                  validator: (value) {
+                    final v = (value ?? '').trim();
+                    if (v.isEmpty) return 'Branch location is required';
+                    if (v.length < 2) return 'Enter a valid location';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 26),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        color: AppColors.gold.withValues(alpha: 0.34),
+                        thickness: 1,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        'ACCOUNT DETAILS',
+                        style: TextStyle(
+                          color: AppColors.gold.withValues(alpha: 0.98),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 3.4,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: AppColors.gold.withValues(alpha: 0.34),
+                        thickness: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Full Name',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _fullNameController,
+                  style: const TextStyle(color: AppColors.text, fontSize: 14),
+                  decoration: const InputDecoration(
+                    hintText: 'Ex. Alexander Sterling',
+                  ),
+                  validator: (value) {
+                    final v = (value ?? '').trim();
+                    if (v.isEmpty) return 'Full name is required';
+                    if (v.length < 2) return 'Enter your full name';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Password',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _newPasswordController,
+                  obscureText: _obscureNewPassword,
+                  style: const TextStyle(color: AppColors.text, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'password',
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(
+                        () => _obscureNewPassword = !_obscureNewPassword,
+                      ),
+                      icon: Icon(
+                        _obscureNewPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.white.withValues(alpha: 0.45),
+                      ),
+                    ),
+                  ),
+                  onChanged: (_) {
+                    setState(() {});
+                    if (_confirmPasswordController.text.isNotEmpty) {
+                      _ownerFormKey.currentState?.validate();
+                    }
+                  },
+                  validator: (value) {
+                    final password = value ?? '';
+                    if (password.isEmpty) return 'Password is required';
+                    if (password.length < 8) {
+                      return 'Use at least 8 characters';
+                    }
+                    if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
+                      return 'Include at least one letter';
+                    }
+                    if (!RegExp(r'[0-9]').hasMatch(password)) {
+                      return 'Include at least one number';
+                    }
+                    if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
+                      return 'Include at least one symbol';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Confirm Password',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: _obscureConfirmPassword,
+                  style: const TextStyle(color: AppColors.text, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'confirm password',
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(
+                        () =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword,
+                      ),
+                      icon: Icon(
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.white.withValues(alpha: 0.45),
+                      ),
+                    ),
+                  ),
+                  validator: (value) {
+                    final confirm = value ?? '';
+                    if (confirm.isEmpty) return 'Confirm your password';
+                    if (confirm != _newPasswordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                  onFieldSubmitted: (_) => _createAndJoin(),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.only(left: 2),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            ownerHasMinLength
+                                ? Icons.check_rounded
+                                : Icons.cancel_rounded,
+                            size: 16,
+                            color: ownerHasMinLength
+                                ? AppColors.gold
+                                : Colors.white.withValues(alpha: 0.4),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'At least 8 characters',
+                            style: TextStyle(
                               color: ownerHasMinLength
                                   ? AppColors.gold
                                   : Colors.white.withValues(alpha: 0.4),
+                              fontSize: 11,
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'At least 8 characters',
-                              style: TextStyle(
-                                color: ownerHasMinLength
-                                    ? AppColors.gold
-                                    : Colors.white.withValues(alpha: 0.4),
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              ownerHasLetter
-                                  ? Icons.check_rounded
-                                  : Icons.cancel_rounded,
-                              size: 16,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            ownerHasLetter
+                                ? Icons.check_rounded
+                                : Icons.cancel_rounded,
+                            size: 16,
+                            color: ownerHasLetter
+                                ? AppColors.gold
+                                : Colors.white.withValues(alpha: 0.4),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Contains one letter',
+                            style: TextStyle(
                               color: ownerHasLetter
                                   ? AppColors.gold
                                   : Colors.white.withValues(alpha: 0.4),
+                              fontSize: 11,
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Contains one letter',
-                              style: TextStyle(
-                                color: ownerHasLetter
-                                    ? AppColors.gold
-                                    : Colors.white.withValues(alpha: 0.4),
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              ownerHasNumber
-                                  ? Icons.check_rounded
-                                  : Icons.cancel_rounded,
-                              size: 16,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            ownerHasNumber
+                                ? Icons.check_rounded
+                                : Icons.cancel_rounded,
+                            size: 16,
+                            color: ownerHasNumber
+                                ? AppColors.gold
+                                : Colors.white.withValues(alpha: 0.4),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Contains one number',
+                            style: TextStyle(
                               color: ownerHasNumber
                                   ? AppColors.gold
                                   : Colors.white.withValues(alpha: 0.4),
+                              fontSize: 11,
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Contains one number',
-                              style: TextStyle(
-                                color: ownerHasNumber
-                                    ? AppColors.gold
-                                    : Colors.white.withValues(alpha: 0.4),
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              ownerHasSymbol
-                                  ? Icons.check_rounded
-                                  : Icons.cancel_rounded,
-                              size: 16,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            ownerHasSymbol
+                                ? Icons.check_rounded
+                                : Icons.cancel_rounded,
+                            size: 16,
+                            color: ownerHasSymbol
+                                ? AppColors.gold
+                                : Colors.white.withValues(alpha: 0.4),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Contains one symbol',
+                            style: TextStyle(
                               color: ownerHasSymbol
                                   ? AppColors.gold
                                   : Colors.white.withValues(alpha: 0.4),
+                              fontSize: 11,
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Contains one symbol',
-                              style: TextStyle(
-                                color: ownerHasSymbol
-                                    ? AppColors.gold
-                                    : Colors.white.withValues(alpha: 0.4),
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 34),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 64,
-                    child: ElevatedButton(
-                      onPressed: _loading ? null : _createAndJoin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.gold,
-                        foregroundColor: const Color(0xFF05070A),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        elevation: 10,
-                        shadowColor: AppColors.gold.withValues(alpha: 0.32),
-                        textStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 2.3,
-                        ),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        _loading ? 'CREATING...' : 'CREATE OWNER ACCOUNT',
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 34),
+                SizedBox(
+                  width: double.infinity,
+                  height: 64,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _createAndJoin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: const Color(0xFF05070A),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      elevation: 10,
+                      shadowColor: AppColors.gold.withValues(alpha: 0.32),
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2.3,
                       ),
                     ),
+                    child: Text(
+                      _loading ? 'CREATING...' : 'CREATE OWNER ACCOUNT',
+                    ),
                   ),
-                  const SizedBox(height: 18),
-                  Center(
-                    child: TextButton(
-                      onPressed: _loading
-                          ? null
-                          : () => Navigator.of(context).maybePop(),
-                      child: Text(
-                        'CANCEL SETUP',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.52),
-                          fontSize: 11,
-                          letterSpacing: 3.0,
-                          fontWeight: FontWeight.w700,
-                        ),
+                ),
+                const SizedBox(height: 18),
+                Center(
+                  child: TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () => setState(() => _existingAccount = true),
+                    child: Text(
+                      'Already have an account? Sign in & Join',
+                      style: TextStyle(
+                        color: AppColors.gold.withValues(alpha: 0.95),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Center(
-                    child: Icon(
-                      Icons.shield_outlined,
-                      color: Colors.white.withValues(alpha: 0.14),
-                      size: 24,
+                ),
+                Center(
+                  child: TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () => Navigator.of(context).maybePop(),
+                    child: Text(
+                      'CANCEL SETUP',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.52),
+                        fontSize: 11,
+                        letterSpacing: 3.0,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: Icon(
+                    Icons.shield_outlined,
+                    color: Colors.white.withValues(alpha: 0.14),
+                    size: 24,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -2767,6 +3253,7 @@ class _InvitePayload {
     this.ownerId,
     this.shopName,
     this.shopLocation,
+    this.accountExists,
   });
 
   final String collection;
@@ -2782,6 +3269,33 @@ class _InvitePayload {
   final String? ownerId;
   final String? shopName;
   final String? shopLocation;
+  final bool? accountExists;
+
+  _InvitePayload copyWith({
+    String? shopName,
+    String? shopLocation,
+    String? branchId,
+    String? shopId,
+    String? ownerId,
+    bool? accountExists,
+  }) {
+    return _InvitePayload(
+      collection: collection,
+      reference: reference,
+      code: code,
+      email: email,
+      role: role,
+      status: status,
+      used: used,
+      expiresAt: expiresAt,
+      branchId: branchId ?? this.branchId,
+      shopId: shopId ?? this.shopId,
+      ownerId: ownerId ?? this.ownerId,
+      shopName: shopName ?? this.shopName,
+      shopLocation: shopLocation ?? this.shopLocation,
+      accountExists: accountExists ?? this.accountExists,
+    );
+  }
 
   factory _InvitePayload.fromDoc(
     QueryDocumentSnapshot<Map<String, dynamic>> doc, {
@@ -2807,6 +3321,9 @@ class _InvitePayload {
       ownerId: (data['ownerId'] as String?)?.trim(),
       shopName: (data['shopName'] as String?)?.trim(),
       shopLocation: (data['shopLocation'] as String?)?.trim(),
+      accountExists: data['accountExists'] is bool
+          ? data['accountExists'] as bool
+          : null,
     );
   }
 }

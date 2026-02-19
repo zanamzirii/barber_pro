@@ -117,7 +117,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _BackButton(onTap: () => Navigator.pop(context)),
+          _BackButton(
+            onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
+              Navigator.pop(context);
+            },
+          ),
           const SizedBox(height: 38),
           const Text(
             'Forgot Password?',

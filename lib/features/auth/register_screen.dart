@@ -223,6 +223,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _goBackOrWelcome() {
+    FocusManager.instance.primaryFocus?.unfocus();
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
       navigator.pop();

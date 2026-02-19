@@ -87,119 +87,124 @@ class _ForgotPasswordConfirmationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFF070A12),
-      body: Stack(
-        children: [
-          const Positioned.fill(child: _BackdropGlow()),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 44),
-                  const Spacer(),
-                  const _MailBadge(),
-                  const SizedBox(height: 30),
-                  const Text(
-                    'Check Your Email',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 48,
-                      height: 1.08,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'PlayfairDisplay',
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    "We've sent a password reset link to your\nregistered email address. Please check your\ninbox (and spam folder).",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      height: 1.55,
-                      color: const Color(0xFF9CA3AF).withValues(alpha: 0.9),
-                    ),
-                  ),
-                  const SizedBox(height: 36),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: AppColors.gold,
-                        borderRadius: BorderRadius.circular(27),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.gold.withValues(alpha: 0.25),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+      body: MediaQuery.removeViewInsets(
+        removeBottom: true,
+        context: context,
+        child: Stack(
+          children: [
+            const Positioned.fill(child: _BackdropGlow()),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 44),
+                    const Spacer(),
+                    const _MailBadge(),
+                    const SizedBox(height: 30),
+                    const Text(
+                      'Check Your Email',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 48,
+                        height: 1.08,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'PlayfairDisplay',
                       ),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: const Color(0xFF070A12),
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(27),
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            Motion.pageRoute(
-                              builder: (_) => const LoginScreen(
-                                headerImageAsset:
-                                    'assets/images/login_screen.png',
-                              ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      "We've sent a password reset link to your\nregistered email address. Please check your\ninbox (and spam folder).",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        height: 1.55,
+                        color: const Color(0xFF9CA3AF).withValues(alpha: 0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 36),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: AppColors.gold,
+                          borderRadius: BorderRadius.circular(27),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.gold.withValues(alpha: 0.25),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
                             ),
-                            (route) => false,
-                          );
-                        },
-                        child: const Text('Go to Login'),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 26),
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      Text(
-                        "Didn't receive the email? ",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: const Color(
-                            0xFF9CA3AF,
-                          ).withValues(alpha: 0.75),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: const Color(0xFF070A12),
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(27),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              Motion.pageRoute(
+                                builder: (_) => const LoginScreen(
+                                  headerImageAsset:
+                                      'assets/images/login_screen.png',
+                                ),
+                              ),
+                              (route) => false,
+                            );
+                          },
+                          child: const Text('Go to Login'),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: _isResending ? null : _handleResend,
-                        child: Text(
-                          _isResending ? 'Sending...' : 'Resend',
+                    ),
+                    const SizedBox(height: 26),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        Text(
+                          "Didn't receive the email? ",
                           style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.gold.withValues(
-                              alpha: _isResending ? 0.65 : 1,
-                            ),
-                            fontWeight: FontWeight.w700,
+                            color: const Color(
+                              0xFF9CA3AF,
+                            ).withValues(alpha: 0.75),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(flex: 2),
-                ],
+                        GestureDetector(
+                          onTap: _isResending ? null : _handleResend,
+                          child: Text(
+                            _isResending ? 'Sending...' : 'Resend',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.gold.withValues(
+                                alpha: _isResending ? 0.65 : 1,
+                              ),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(flex: 2),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -72,6 +72,20 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
     throw Exception('Could not generate unique invite code');
   }
 
+  Future<bool?> _checkAccountExistsForInvite(String email) async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email.trim().toLowerCase())
+          .limit(1)
+          .get();
+      return snap.docs.isNotEmpty;
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') return null;
+      rethrow;
+    }
+  }
+
   Future<QueryDocumentSnapshot<Map<String, dynamic>>?>
   _findExistingPendingInvite(String branchId, String email) async {
     final now = DateTime.now();
@@ -227,6 +241,7 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
 
       final code = await _generateUniqueInviteCode();
       final now = DateTime.now();
+      final accountExists = await _checkAccountExistsForInvite(rawEmail);
       await FirebaseFirestore.instance.collection(_inviteCollection).add({
         'code': code,
         'email': rawEmail,
@@ -238,6 +253,7 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
         'used': false,
         'createdAt': FieldValue.serverTimestamp(),
         'expiresAt': Timestamp.fromDate(now.add(const Duration(hours: 72))),
+        if (accountExists != null) 'accountExists': accountExists,
       });
 
       _emailController.clear();

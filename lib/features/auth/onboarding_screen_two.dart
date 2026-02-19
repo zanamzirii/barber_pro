@@ -36,81 +36,86 @@ class OnboardingScreenTwo extends StatelessWidget {
         );
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.midnight,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
-          child: Column(
-            children: [
-              _IllustrationCard(assetPath: illustrationAsset),
-              const SizedBox(height: 24),
-              const Text(
-                'Effortless Management\n& Booking',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 26,
-                  height: 1.2,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text,
-                  fontFamily: 'PlayfairDisplay',
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Experience seamless scheduling at your fingertips. Whether '
-                'you are booking a fresh cut or managing your daily lineup, '
-                'efficiency is just a tap away.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.6,
-                  color: Color(0xB3F5F5F5),
-                  fontFamily: 'Inter',
-                ),
-              ),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  _Indicator(active: false, isWide: false),
-                  SizedBox(width: 10),
-                  _Indicator(active: true, isWide: true),
-                  SizedBox(width: 10),
-                  _Indicator(active: false, isWide: false),
-                ],
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton(
-                  style: buttonStyle,
-                  onPressed: () => Navigator.of(context).push(
-                    Motion.pageRoute(
-                      builder: (_) => const OnboardingScreenThree(
-                        backgroundImageAsset: 'assets/images/onboarding_3.png',
-                      ),
-                    ),
+      body: MediaQuery.removeViewInsets(
+        removeBottom: true,
+        context: context,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
+            child: Column(
+              children: [
+                _IllustrationCard(assetPath: illustrationAsset),
+                const SizedBox(height: 24),
+                const Text(
+                  'Effortless Management\n& Booking',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 26,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text,
+                    fontFamily: 'PlayfairDisplay',
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        'Next',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Inter',
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Experience seamless scheduling at your fingertips. Whether '
+                  'you are booking a fresh cut or managing your daily lineup, '
+                  'efficiency is just a tap away.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    height: 1.6,
+                    color: Color(0xB3F5F5F5),
+                    fontFamily: 'Inter',
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    _Indicator(active: false, isWide: false),
+                    SizedBox(width: 10),
+                    _Indicator(active: true, isWide: true),
+                    SizedBox(width: 10),
+                    _Indicator(active: false, isWide: false),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton(
+                    style: buttonStyle,
+                    onPressed: () => Navigator.of(context).push(
+                      Motion.pageRoute(
+                        builder: (_) => const OnboardingScreenThree(
+                          backgroundImageAsset: 'assets/images/onboarding_3.png',
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward, size: 20),
-                    ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Text(
+                          'Next',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.arrow_forward, size: 20),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 6),
-            ],
+                const SizedBox(height: 6),
+              ],
+            ),
           ),
         ),
       ),

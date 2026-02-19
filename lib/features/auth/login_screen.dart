@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 import 'verify_email_screen.dart';
+import 'welcome_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -142,6 +143,23 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _goBackOrWelcome() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    navigator.pushAndRemoveUntil(
+      Motion.pageRoute(
+        builder: (_) => const WelcomeScreen(
+          backgroundImageAsset: 'assets/images/welcome_screen.png',
+        ),
+      ),
+      (_) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
@@ -157,6 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
             _LoginHeader(
               imageAsset: widget.headerImageAsset,
               compact: isKeyboardOpen,
+              onBack: _goBackOrWelcome,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -323,10 +342,15 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class _LoginHeader extends StatelessWidget {
-  const _LoginHeader({this.imageAsset, required this.compact});
+  const _LoginHeader({
+    this.imageAsset,
+    required this.compact,
+    required this.onBack,
+  });
 
   final String? imageAsset;
   final bool compact;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -362,6 +386,29 @@ class _LoginHeader extends StatelessWidget {
                     Color(0xCC0B0F1A),
                     AppColors.midnight,
                   ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: topPadding + 16,
+            left: 24,
+            child: InkWell(
+              onTap: onBack,
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new,
+                  size: 18,
+                  color: AppColors.text,
                 ),
               ),
             ),

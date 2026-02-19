@@ -96,6 +96,20 @@ class _SuperAdminInviteOwnerPanelState extends State<_SuperAdminInviteOwnerPanel
     throw Exception('Could not generate unique invite code');
   }
 
+  Future<bool?> _checkAccountExistsForInvite(String email) async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email.trim().toLowerCase())
+          .limit(1)
+          .get();
+      return snap.docs.isNotEmpty;
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') return null;
+      rethrow;
+    }
+  }
+
   Future<void> _send() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _sending = true);
@@ -122,6 +136,7 @@ class _SuperAdminInviteOwnerPanelState extends State<_SuperAdminInviteOwnerPanel
       }
 
       final code = await _uniqueCode();
+      final accountExists = await _checkAccountExistsForInvite(email);
       final payload = <String, dynamic>{
         'code': code,
         'email': email,
@@ -133,6 +148,7 @@ class _SuperAdminInviteOwnerPanelState extends State<_SuperAdminInviteOwnerPanel
         'shopLocation': _locationController.text.trim(),
         'createdAt': FieldValue.serverTimestamp(),
         'expiresAt': Timestamp.fromDate(now.add(const Duration(hours: 72))),
+        if (accountExists != null) 'accountExists': accountExists,
       };
       await FirebaseFirestore.instance.collection(_inviteCollection).add(payload);
       await _showResult(email, code, existing: false);

@@ -42,6 +42,7 @@ exports.cleanupDeletedUserData = onUserDeleted(async (event) => {
   }
 });
 
+
 function pickBranchId(data) {
   const branchId = typeof data.branchId === "string" ? data.branchId.trim() : "";
   if (branchId) return branchId;
@@ -198,4 +199,3 @@ async function safeGetDoc(ref) {
     return {exists: false, data: () => ({})};
   }
 }
-

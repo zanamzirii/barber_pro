@@ -10,12 +10,18 @@ class PendingOnboardingService {
   static Future<void> savePendingRegistration({
     required User user,
   }) async {
-    await _pendingCollection.doc(user.uid).set({
+    final payload = <String, dynamic>{
       'uid': user.uid,
       'type': 'register',
       'updatedAt': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    };
+    try {
+      await _pendingCollection.doc(user.uid).set(payload, SetOptions(merge: true));
+    } on FirebaseException catch (e) {
+      if (e.code != 'permission-denied') rethrow;
+      await _savePendingFallbackOnUserDoc(user, payload);
+    }
   }
 
   static Future<void> savePendingInvite({
@@ -30,7 +36,7 @@ class PendingOnboardingService {
     String? shopName,
     String? shopLocation,
   }) async {
-    await _pendingCollection.doc(user.uid).set({
+    final payload = <String, dynamic>{
       'uid': user.uid,
       'type': 'invite',
       'inviteCollection': inviteCollection,
@@ -44,7 +50,13 @@ class PendingOnboardingService {
       'shopLocation': (shopLocation ?? '').trim(),
       'updatedAt': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    };
+    try {
+      await _pendingCollection.doc(user.uid).set(payload, SetOptions(merge: true));
+    } on FirebaseException catch (e) {
+      if (e.code != 'permission-denied') rethrow;
+      await _savePendingFallbackOnUserDoc(user, payload);
+    }
   }
 
   static Future<void> finalizeForCurrentUser() async {
@@ -54,7 +66,18 @@ class PendingOnboardingService {
     final uid = user.uid;
     final pendingRef = _pendingCollection.doc(uid);
     final pendingSnap = await pendingRef.get();
-    final pending = pendingSnap.data();
+    Map<String, dynamic>? pending = pendingSnap.data();
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    DocumentSnapshot<Map<String, dynamic>>? userSnap;
+
+    if (pending == null) {
+      userSnap = await userRef.get();
+      final userData = userSnap.data() ?? const <String, dynamic>{};
+      final fallbackPending = userData['pendingOnboarding'];
+      if (fallbackPending is Map<String, dynamic>) {
+        pending = fallbackPending;
+      }
+    }
 
     if (pending == null) {
       await _ensureVerifiedIdentity(user);
@@ -73,6 +96,26 @@ class PendingOnboardingService {
     try {
       await pendingRef.delete();
     } catch (_) {}
+    try {
+      await userRef.set({
+        'pendingOnboarding': FieldValue.delete(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (_) {}
+  }
+
+  static Future<void> _savePendingFallbackOnUserDoc(
+    User user,
+    Map<String, dynamic> payload,
+  ) async {
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+      'uid': user.uid,
+      'email': (user.email ?? '').trim().toLowerCase(),
+      'fullName': (user.displayName ?? '').trim(),
+      'pendingOnboarding': payload,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   static Future<void> _ensureVerifiedIdentity(User user) async {
@@ -148,17 +191,20 @@ class PendingOnboardingService {
     final existingRoles = UserRoleService.extractRoles(userData);
 
     final branchId = ((pending['branchId'] as String?) ?? '').trim();
-    final pendingShopId = ((pending['shopId'] as String?) ?? '').trim();
     final ownerId = ((pending['ownerId'] as String?) ?? '').trim();
     final shopName = ((pending['shopName'] as String?) ?? '').trim();
     final shopLocation = ((pending['shopLocation'] as String?) ?? '').trim();
 
     final patch = <String, dynamic>{
+      'uid': user.uid,
       'email': email,
       'updatedAt': FieldValue.serverTimestamp(),
     };
     if (fullName.isNotEmpty) {
       patch['fullName'] = fullName;
+    }
+    if (!userDoc.exists) {
+      patch['createdAt'] = FieldValue.serverTimestamp();
     }
 
     if (role == 'barber') {
@@ -181,7 +227,9 @@ class PendingOnboardingService {
       patch['ownerId'] = ownerId;
       patch['isActive'] = true;
     } else {
-      final shopId = pendingShopId.isNotEmpty ? pendingShopId : user.uid;
+      // Owner invite finalization always provisions the owner's own shop id.
+      // Using foreign/pre-created IDs can violate Firestore rules.
+      final shopId = user.uid;
       await _cleanPreviousBarberEmploymentForOwnerTransition(user.uid, shopId);
       patch['shopId'] = shopId;
       patch['branchId'] = shopId;

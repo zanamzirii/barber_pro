@@ -6,11 +6,13 @@ service cloud.firestore {
     }
 
     function userData(uid) {
-      return get(/databases/$(database)/documents/users/$(uid)).data;
+      return exists(/databases/$(database)/documents/users/$(uid))
+        ? get(/databases/$(database)/documents/users/$(uid)).data
+        : null;
     }
 
     function userRole() {
-      return isSignedIn()
+      return isSignedIn() && userData(request.auth.uid) != null
         ? (
           userData(request.auth.uid).activeRole != null
             ? userData(request.auth.uid).activeRole
@@ -20,7 +22,7 @@ service cloud.firestore {
     }
 
     function hasRole(roleName) {
-      return isSignedIn() && (
+      return isSignedIn() && userData(request.auth.uid) != null && (
         (
           userData(request.auth.uid).roles is list &&
           roleName in userData(request.auth.uid).roles
@@ -44,7 +46,9 @@ service cloud.firestore {
     }
 
     function ownerShopId() {
-      return isSignedIn() ? userData(request.auth.uid).shopId : null;
+      return isSignedIn() && userData(request.auth.uid) != null
+        ? userData(request.auth.uid).shopId
+        : null;
     }
 
     function isBarberForShop(shopId) {
@@ -94,7 +98,12 @@ service cloud.firestore {
         && request.auth.uid == userId
         && request.resource.data.uid == request.auth.uid;
       allow read: if isSignedIn()
-        && (request.auth.uid == userId || isSuperAdmin() || ownerCanReadUser());
+        && (
+          request.auth.uid == userId ||
+          isSuperAdmin() ||
+          isOwner() ||
+          ownerCanReadUser()
+        );
       allow update: if isSignedIn()
         && (request.auth.uid == userId || isSuperAdmin() || ownerCanManageBarber());
       allow delete: if isSignedIn()
@@ -113,15 +122,19 @@ service cloud.firestore {
       match /barbers/{barberId} {
         allow read: if isSignedIn();
         allow create: if managesShop(shopId) || (
-          isBarberForShop(shopId) &&
+          isSignedIn() &&
+          request.auth.uid == barberId &&
           request.resource.data.barberId == request.auth.uid &&
-          request.resource.data.barberUserId == request.auth.uid
+          request.resource.data.barberUserId == request.auth.uid &&
+          request.resource.data.shopId == shopId
         );
         allow update: if managesShop(shopId) || (
-          isBarberForShop(shopId) &&
+          isSignedIn() &&
+          request.auth.uid == barberId &&
           resource.data.barberId == request.auth.uid &&
           request.resource.data.barberId == request.auth.uid &&
-          request.resource.data.barberUserId == request.auth.uid
+          request.resource.data.barberUserId == request.auth.uid &&
+          request.resource.data.shopId == shopId
         );
         allow delete: if managesShop(shopId);
       }

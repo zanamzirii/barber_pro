@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'core/auth/pending_onboarding_service.dart';
 import 'core/auth/user_role_service.dart';
 import 'features/auth/splash_screen.dart';
 import 'features/auth/verify_email_screen.dart';
@@ -19,7 +20,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   late final Future<void> _splashDelayFuture;
-  static const Duration _minimumSplashDuration = Duration(milliseconds: 900);
+  static const Duration _minimumSplashDuration = Duration(milliseconds: 750);
   String? _ensuredUid;
   Future<void>? _ensureIdentityFuture;
 
@@ -35,14 +36,22 @@ class _AppShellState extends State<AppShell> {
       future: _splashDelayFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const SplashScreen(autoNavigate: false);
+          return const SplashScreen(
+            autoNavigate: false,
+            progress: 0.28,
+            statusText: 'Starting app...',
+          );
         }
 
         return StreamBuilder<User?>(
           stream: FirebaseAuth.instance.authStateChanges(),
           builder: (context, authSnapshot) {
             if (authSnapshot.connectionState == ConnectionState.waiting) {
-              return const SplashScreen(autoNavigate: false);
+              return const SplashScreen(
+                autoNavigate: false,
+                progress: 0.52,
+                statusText: 'Checking session...',
+              );
             }
 
             final user = authSnapshot.data;
@@ -62,14 +71,28 @@ class _AppShellState extends State<AppShell> {
 
             if (_ensuredUid != user.uid || _ensureIdentityFuture == null) {
               _ensuredUid = user.uid;
-              _ensureIdentityFuture = UserRoleService.ensureIdentityDoc(user);
+              _ensureIdentityFuture = _prepareVerifiedIdentity(user);
             }
 
             return FutureBuilder<void>(
               future: _ensureIdentityFuture,
               builder: (context, ensureSnapshot) {
                 if (ensureSnapshot.connectionState != ConnectionState.done) {
-                  return const SplashScreen(autoNavigate: false);
+                  return const SplashScreen(
+                    autoNavigate: false,
+                    progress: 0.78,
+                    statusText: 'Preparing account...',
+                  );
+                }
+                if (ensureSnapshot.hasError) {
+                  return _AuthBootstrapErrorScreen(
+                    message: ensureSnapshot.error.toString(),
+                    onRetry: () {
+                      setState(() {
+                        _ensureIdentityFuture = _prepareVerifiedIdentity(user);
+                      });
+                    },
+                  );
                 }
                 return _RoleGate(uid: user.uid);
               },
@@ -77,6 +100,92 @@ class _AppShellState extends State<AppShell> {
           },
         );
       },
+    );
+  }
+
+  Future<void> _prepareVerifiedIdentity(User user) async {
+    // Always finalize pending invite/registration work first (if any),
+    // then ensure the identity doc exists.
+    await _finalizeWithRetry();
+    await UserRoleService.ensureIdentityDoc(user);
+  }
+
+  Future<void> _finalizeWithRetry() async {
+    var delayMs = 350;
+    Object? lastError;
+    for (var i = 0; i < 3; i++) {
+      try {
+        await PendingOnboardingService.finalizeForCurrentUser();
+        return;
+      } on FirebaseException catch (e) {
+        lastError = e;
+        final transient =
+            e.code == 'unavailable' ||
+            e.code == 'aborted' ||
+            e.code == 'deadline-exceeded';
+        if (!transient || i == 2) rethrow;
+      } catch (e) {
+        lastError = e;
+        if (i == 2) rethrow;
+      }
+      await Future<void>.delayed(Duration(milliseconds: delayMs));
+      delayMs *= 2;
+    }
+    if (lastError != null) throw lastError;
+  }
+}
+
+class _AuthBootstrapErrorScreen extends StatelessWidget {
+  const _AuthBootstrapErrorScreen({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      backgroundColor: const Color(0xFF070A12),
+      body: MediaQuery.removeViewInsets(
+        removeBottom: true,
+        context: context,
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.redAccent),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Account setup failed',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: onRetry,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -95,7 +204,11 @@ class _RoleGate extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SplashScreen(autoNavigate: false);
+          return const SplashScreen(
+            autoNavigate: false,
+            progress: 0.92,
+            statusText: 'Loading dashboard...',
+          );
         }
 
         final data = snapshot.data?.data() ?? <String, dynamic>{};
