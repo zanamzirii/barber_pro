@@ -25,7 +25,9 @@ class OnboardingScreenThree extends StatelessWidget {
                   Positioned.fill(
                     child: backgroundImageAsset == null
                         ? const DecoratedBox(
-                            decoration: BoxDecoration(color: AppColors.midnight),
+                            decoration: BoxDecoration(
+                              color: AppColors.midnight,
+                            ),
                           )
                         : Image.asset(
                             backgroundImageAsset!,
@@ -42,7 +44,7 @@ class OnboardingScreenThree extends StatelessWidget {
                           colors: [
                             Color(0x00070A12),
                             Color(0xB3070A12),
-                            Color(0xFF070A12),
+                            AppColors.surface,
                           ],
                         ),
                       ),

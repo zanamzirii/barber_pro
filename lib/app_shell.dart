@@ -10,6 +10,7 @@ import 'features/barber/barber_shell_screen.dart';
 import 'features/customer/customer_shell_screen.dart';
 import 'features/owner/owner_shell_screen.dart';
 import 'features/superadmin/superadmin_dashboard_screen.dart';
+import 'core/theme/app_colors.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -173,7 +174,10 @@ class _AuthBootstrapErrorScreen extends StatelessWidget {
                   Text(
                     message,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.onDark70,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -190,17 +194,25 @@ class _AuthBootstrapErrorScreen extends StatelessWidget {
   }
 }
 
-class _RoleGate extends StatelessWidget {
+class _RoleGate extends StatefulWidget {
   const _RoleGate({required this.uid});
 
   final String uid;
+
+  @override
+  State<_RoleGate> createState() => _RoleGateState();
+}
+
+class _RoleGateState extends State<_RoleGate> {
+  Future<Set<String>>? _rolesFuture;
+  String? _rolesFutureSignature;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('users')
-          .doc(uid)
+          .doc(widget.uid)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -214,11 +226,16 @@ class _RoleGate extends StatelessWidget {
         final data = snapshot.data?.data() ?? <String, dynamic>{};
         final fallbackRoles = UserRoleService.extractRoles(data);
         final fallbackRole = _pickRole(data, fallbackRoles);
-        return FutureBuilder<Set<String>>(
-          future: UserRoleService.inferRolesForUser(
-            uid,
+        final signature = _rolesSignature(data);
+        if (_rolesFuture == null || _rolesFutureSignature != signature) {
+          _rolesFutureSignature = signature;
+          _rolesFuture = UserRoleService.inferRolesForUser(
+            widget.uid,
             data,
-          ).timeout(const Duration(seconds: 6), onTimeout: () => fallbackRoles),
+          ).timeout(const Duration(seconds: 6), onTimeout: () => fallbackRoles);
+        }
+        return FutureBuilder<Set<String>>(
+          future: _rolesFuture,
           builder: (context, rolesSnapshot) {
             if (rolesSnapshot.connectionState == ConnectionState.waiting ||
                 rolesSnapshot.hasError) {
@@ -231,6 +248,19 @@ class _RoleGate extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _rolesSignature(Map<String, dynamic> data) {
+    return <Object?>[
+      widget.uid,
+      data['role'],
+      data['activeRole'],
+      data['roles'],
+      data['branchId'],
+      data['shopId'],
+      data['selectedShopId'],
+      data['updatedAt'],
+    ].join('|');
   }
 
   String _pickRole(Map<String, dynamic> data, Set<String> roles) {

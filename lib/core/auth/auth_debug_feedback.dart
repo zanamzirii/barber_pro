@@ -9,7 +9,8 @@ void showDevAuthError(
 }) {
   if (!kDebugMode) return;
 
-  final msg = '[DEBUG][$scope] code=${e.code}'
+  final msg =
+      '[DEBUG][$scope] code=${e.code}'
       '${e.message == null ? '' : ' | ${e.message}'}';
 
   ScaffoldMessenger.of(context).showSnackBar(
@@ -20,4 +21,3 @@ void showDevAuthError(
     ),
   );
 }
-

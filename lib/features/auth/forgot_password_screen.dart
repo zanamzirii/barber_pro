@@ -192,7 +192,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF070A12),
+      backgroundColor: AppColors.surface,
       body: Stack(
         children: [
           const Positioned.fill(child: _BackdropGlow()),
@@ -220,7 +220,7 @@ class _BackdropGlow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(color: const Color(0xFF070A12)),
+        Container(color: AppColors.surface),
         Positioned(
           top: -120,
           right: -120,
@@ -265,8 +265,8 @@ class _BackButton extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.05),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          color: AppColors.onDark05,
+          border: Border.all(color: AppColors.onDark08),
         ),
         child: const Icon(
           Icons.arrow_back_ios_new,
@@ -296,7 +296,7 @@ class _LuxuryEmailField extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF13161F),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: AppColors.onDark10),
       ),
       child: TextFormField(
         controller: controller,
@@ -367,9 +367,9 @@ class _SendButton extends StatelessWidget {
         ),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            foregroundColor: const Color(0xFF070A12),
-            shadowColor: Colors.transparent,
+            backgroundColor: AppColors.transparent,
+            foregroundColor: AppColors.surface,
+            shadowColor: AppColors.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -385,7 +385,7 @@ class _SendButton extends StatelessWidget {
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      Color(0xFF070A12),
+                      AppColors.surface,
                     ),
                   ),
                 ),

@@ -66,7 +66,7 @@ class OwnerAppointmentsScreen extends StatelessWidget {
             return const Center(
               child: Text(
                 'No shop assigned',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: AppColors.onDark70),
               ),
             );
           }
@@ -107,7 +107,7 @@ class OwnerAppointmentsScreen extends StatelessWidget {
                             return const Center(
                               child: Text(
                                 'No appointments yet',
-                                style: TextStyle(color: Colors.white70),
+                                style: TextStyle(color: AppColors.onDark70),
                               ),
                             );
                           }
@@ -206,7 +206,7 @@ class OwnerAppointmentsScreen extends StatelessWidget {
                                               child: const Text(
                                                 'Cancel',
                                                 style: TextStyle(
-                                                  color: Colors.white70,
+                                                  color: AppColors.onDark70,
                                                 ),
                                               ),
                                             ),

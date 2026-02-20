@@ -276,9 +276,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           height: 40,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
-                            ),
+                            border: Border.all(color: AppColors.onDark08),
                           ),
                           child: const Icon(
                             Icons.arrow_back_ios_new,
@@ -453,9 +451,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
+                          backgroundColor: AppColors.transparent,
                           foregroundColor: AppColors.midnight,
-                          shadowColor: Colors.transparent,
+                          shadowColor: AppColors.transparent,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18),
                           ),
@@ -602,16 +600,16 @@ class _LuxTextField extends StatelessWidget {
         hintStyle: TextStyle(color: AppColors.muted.withValues(alpha: 0.4)),
         errorStyle: const TextStyle(color: Color(0xFFFF8A80)),
         filled: true,
-        fillColor: const Color(0xFF121620),
+        fillColor: AppColors.surfaceSoft,
         prefixIcon: Icon(icon, color: AppColors.muted.withValues(alpha: 0.6)),
         suffixIcon: suffixIcon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderSide: BorderSide(color: AppColors.onDark08),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderSide: BorderSide(color: AppColors.onDark08),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

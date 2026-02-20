@@ -7,10 +7,10 @@ class ExploreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       appBar: AppBar(
         title: const Text('Explore'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -47,10 +47,10 @@ class _SearchBar extends StatelessWidget {
         hintText: 'Search shops, services, barbers',
         prefixIcon: const Icon(Icons.search),
         filled: true,
-        fillColor: const Color(0xFF121620),
+        fillColor: AppColors.surfaceSoft,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: AppColors.onDark10),
         ),
       ),
     );
@@ -68,7 +68,7 @@ class _ShopCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF121620),
+        color: AppColors.surfaceSoft,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
       ),

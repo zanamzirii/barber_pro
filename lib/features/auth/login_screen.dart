@@ -263,9 +263,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
+                              backgroundColor: AppColors.transparent,
                               foregroundColor: AppColors.midnight,
-                              shadowColor: Colors.transparent,
+                              shadowColor: AppColors.transparent,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -401,9 +401,7 @@ class _LoginHeader extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
+                  border: Border.all(color: AppColors.onDark08),
                 ),
                 child: const Icon(
                   Icons.arrow_back_ios_new,
@@ -548,11 +546,11 @@ class _LuxTextField extends StatelessWidget {
         suffixIcon: suffixIcon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: AppColors.onDark10),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: AppColors.onDark10),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),

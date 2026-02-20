@@ -7,9 +7,7 @@ class PendingOnboardingService {
   static CollectionReference<Map<String, dynamic>> get _pendingCollection =>
       FirebaseFirestore.instance.collection('pending_onboarding');
 
-  static Future<void> savePendingRegistration({
-    required User user,
-  }) async {
+  static Future<void> savePendingRegistration({required User user}) async {
     final payload = <String, dynamic>{
       'uid': user.uid,
       'type': 'register',
@@ -17,7 +15,9 @@ class PendingOnboardingService {
       'createdAt': FieldValue.serverTimestamp(),
     };
     try {
-      await _pendingCollection.doc(user.uid).set(payload, SetOptions(merge: true));
+      await _pendingCollection
+          .doc(user.uid)
+          .set(payload, SetOptions(merge: true));
     } on FirebaseException catch (e) {
       if (e.code != 'permission-denied') rethrow;
       await _savePendingFallbackOnUserDoc(user, payload);
@@ -52,7 +52,9 @@ class PendingOnboardingService {
       'createdAt': FieldValue.serverTimestamp(),
     };
     try {
-      await _pendingCollection.doc(user.uid).set(payload, SetOptions(merge: true));
+      await _pendingCollection
+          .doc(user.uid)
+          .set(payload, SetOptions(merge: true));
     } on FirebaseException catch (e) {
       if (e.code != 'permission-denied') rethrow;
       await _savePendingFallbackOnUserDoc(user, payload);

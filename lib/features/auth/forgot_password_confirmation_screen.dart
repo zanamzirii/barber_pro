@@ -88,7 +88,7 @@ class _ForgotPasswordConfirmationScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: const Color(0xFF070A12),
+      backgroundColor: AppColors.surface,
       body: MediaQuery.removeViewInsets(
         removeBottom: true,
         context: context,
@@ -143,9 +143,9 @@ class _ForgotPasswordConfirmationScreenState
                         ),
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: const Color(0xFF070A12),
-                            shadowColor: Colors.transparent,
+                            backgroundColor: AppColors.transparent,
+                            foregroundColor: AppColors.surface,
+                            shadowColor: AppColors.transparent,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(27),
                             ),
@@ -223,7 +223,7 @@ class _MailBadge extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF1A1F2E), Color(0xFF070A12)],
+          colors: [Color(0xFF1A1F2E), AppColors.surface],
         ),
         border: Border.all(color: AppColors.gold.withValues(alpha: 0.28)),
         boxShadow: [
@@ -246,7 +246,7 @@ class _BackdropGlow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(color: const Color(0xFF070A12)),
+        Container(color: AppColors.surface),
         Positioned(
           top: -120,
           left: -120,

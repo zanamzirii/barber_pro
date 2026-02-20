@@ -18,16 +18,29 @@ class BarberShellScreen extends StatefulWidget {
 
 class _BarberShellScreenState extends State<BarberShellScreen> {
   late int _index;
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
     _index = widget.initialIndex.clamp(0, 4);
+    _screens = [
+      BarberDashboardScreen(onOpenScheduleTab: _openScheduleTab),
+      const BarberScheduleScreen(),
+      const BarberClientsScreen(),
+      const _BarberChatPlaceholderScreen(),
+      const BarberProfileScreen(),
+    ];
   }
 
   void _onTap(int index) {
     if (_index == index) return;
     setState(() => _index = index);
+  }
+
+  void _openScheduleTab() {
+    if (_index == 1) return;
+    setState(() => _index = 1);
   }
 
   @override
@@ -41,21 +54,10 @@ class _BarberShellScreenState extends State<BarberShellScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFF05070A),
+        backgroundColor: AppColors.shellBackground,
         body: Stack(
           children: [
-            IndexedStack(
-              index: _index,
-              children: [
-                BarberDashboardScreen(
-                  onOpenScheduleTab: () => setState(() => _index = 1),
-                ),
-                const BarberScheduleScreen(),
-                const BarberClientsScreen(),
-                const _BarberChatPlaceholderScreen(),
-                const BarberProfileScreen(),
-              ],
-            ),
+            IndexedStack(index: _index, children: _screens),
             _BarberBottomBar(index: _index, onTap: _onTap),
           ],
         ),
@@ -79,12 +81,11 @@ class _BarberBottomBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Container(
-          height: 84,
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFF05070A).withValues(alpha: 0.95),
-            border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-            ),
+            color: AppColors.shellNavBackground.withValues(alpha: 0.98),
+            border: Border(top: BorderSide(color: AppColors.shellNavBorder)),
           ),
           child: Row(
             children: [
@@ -93,55 +94,55 @@ class _BarberBottomBar extends StatelessWidget {
                 label: 'DASHBOARD',
                 active: index == 0,
                 activeColor: AppColors.gold,
-                inactiveColor: Colors.white.withValues(alpha: 0.45),
+                inactiveColor: AppColors.textOnDark45,
                 onTap: () => onTap(0),
-                iconSize: 26,
+                iconSize: 23,
                 labelSize: 9,
-                letterSpacing: 1.1,
+                letterSpacing: 0.2,
               ),
               RoleNavItem(
                 icon: Icons.calendar_month_rounded,
                 label: 'SCHEDULE',
                 active: index == 1,
                 activeColor: AppColors.gold,
-                inactiveColor: Colors.white.withValues(alpha: 0.45),
+                inactiveColor: AppColors.textOnDark45,
                 onTap: () => onTap(1),
-                iconSize: 26,
+                iconSize: 23,
                 labelSize: 9,
-                letterSpacing: 1.1,
+                letterSpacing: 0.2,
               ),
               RoleNavItem(
                 icon: Icons.group_rounded,
                 label: 'CLIENTS',
                 active: index == 2,
                 activeColor: AppColors.gold,
-                inactiveColor: Colors.white.withValues(alpha: 0.45),
+                inactiveColor: AppColors.textOnDark45,
                 onTap: () => onTap(2),
-                iconSize: 26,
+                iconSize: 23,
                 labelSize: 9,
-                letterSpacing: 1.1,
+                letterSpacing: 0.2,
               ),
               RoleNavItem(
                 icon: Icons.chat_bubble_rounded,
                 label: 'CHAT',
                 active: index == 3,
                 activeColor: AppColors.gold,
-                inactiveColor: Colors.white.withValues(alpha: 0.45),
+                inactiveColor: AppColors.textOnDark45,
                 onTap: () => onTap(3),
-                iconSize: 26,
+                iconSize: 23,
                 labelSize: 9,
-                letterSpacing: 1.1,
+                letterSpacing: 0.2,
               ),
               RoleNavItem(
                 icon: Icons.account_circle_rounded,
                 label: 'PROFILE',
                 active: index == 4,
                 activeColor: AppColors.gold,
-                inactiveColor: Colors.white.withValues(alpha: 0.45),
+                inactiveColor: AppColors.textOnDark45,
                 onTap: () => onTap(4),
-                iconSize: 26,
+                iconSize: 23,
                 labelSize: 9,
-                letterSpacing: 1.1,
+                letterSpacing: 0.2,
               ),
             ],
           ),
@@ -157,11 +158,11 @@ class _BarberChatPlaceholderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: Center(
         child: Text(
           'Barber chat screen coming soon',
-          style: TextStyle(color: Colors.white70, fontSize: 16),
+          style: TextStyle(color: AppColors.textOnDark70, fontSize: 16),
         ),
       ),
     );

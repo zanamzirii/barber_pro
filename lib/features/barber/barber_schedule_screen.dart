@@ -20,13 +20,13 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFF05070A),
+        backgroundColor: AppColors.shellBackground,
         body: Center(child: Text('Please log in again')),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
             .collection('appointments')
@@ -40,7 +40,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
             );
           }
 
-          final all = _mapAppointments(snapshot.data?.docs ?? const []);
+          final all = _mapAppointments(snapshot.data?.docs ?? []);
           final now = DateTime.now();
           final dayAppointments =
               all
@@ -103,7 +103,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF070A12),
+                        color: AppColors.ownerDashboardCard,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: AppColors.gold.withValues(alpha: 0.2),
@@ -121,11 +121,9 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF070A12),
+                    color: AppColors.ownerDashboardCard,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
+                    border: Border.all(color: AppColors.onDark06),
                   ),
                   child: Row(
                     children: [
@@ -137,7 +135,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                             height: 36,
                             decoration: BoxDecoration(
                               color: _showWeek
-                                  ? Colors.transparent
+                                  ? AppColors.transparent
                                   : AppColors.gold,
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -146,8 +144,8 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                               'DAY',
                               style: TextStyle(
                                 color: _showWeek
-                                    ? const Color(0xFF4E5B73)
-                                    : const Color(0xFF05070A),
+                                    ? AppColors.slate450
+                                    : AppColors.shellBackground,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.0,
@@ -165,7 +163,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                             decoration: BoxDecoration(
                               color: _showWeek
                                   ? AppColors.gold
-                                  : Colors.transparent,
+                                  : AppColors.transparent,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             alignment: Alignment.center,
@@ -173,8 +171,8 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                               'WEEK',
                               style: TextStyle(
                                 color: _showWeek
-                                    ? const Color(0xFF05070A)
-                                    : const Color(0xFF4E5B73),
+                                    ? AppColors.shellBackground
+                                    : AppColors.slate450,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.0,
@@ -200,7 +198,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                           decoration: BoxDecoration(
                             color: selected
                                 ? AppColors.gold
-                                : const Color(0xFF070A12),
+                                : AppColors.ownerDashboardCard,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: selected
@@ -215,8 +213,8 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                                 _weekdayShort(d),
                                 style: TextStyle(
                                   color: selected
-                                      ? const Color(0xFF05070A)
-                                      : const Color(0xFF6B7893),
+                                      ? AppColors.shellBackground
+                                      : AppColors.slate300,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -226,7 +224,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                                 '${d.day}',
                                 style: TextStyle(
                                   color: selected
-                                      ? const Color(0xFF05070A)
+                                      ? AppColors.shellBackground
                                       : Colors.white,
                                   fontSize: 24,
                                   fontWeight: FontWeight.w800,
@@ -237,7 +235,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                                 const SizedBox(height: 2),
                                 const CircleAvatar(
                                   radius: 2,
-                                  backgroundColor: Color(0xFF05070A),
+                                  backgroundColor: AppColors.shellBackground,
                                 ),
                               ],
                             ],
@@ -298,10 +296,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
           left: 17,
           top: 8,
           bottom: 8,
-          child: Container(
-            width: 1,
-            color: Colors.white.withValues(alpha: 0.08),
-          ),
+          child: Container(width: 1, color: AppColors.onDark08),
         ),
         Column(children: items),
       ],
@@ -328,19 +323,19 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
 
       Color progressColor;
       if (selected && ratio > 0.75) {
-        progressColor = const Color(0xFFEF4444);
+        progressColor = AppColors.danger;
       } else if (ratio >= 0.5) {
-        progressColor = const Color(0xFFF59E0B);
+        progressColor = AppColors.warning;
       } else {
-        progressColor = const Color(0xFF10B981);
+        progressColor = AppColors.success;
       }
 
       final bg = selected
           ? AppColors.gold.withValues(alpha: 0.08)
-          : const Color(0xFF070A12);
+          : AppColors.ownerDashboardCard;
       final border = selected
           ? AppColors.gold.withValues(alpha: 0.35)
-          : Colors.white.withValues(alpha: 0.06);
+          : AppColors.onDark06;
 
       return Container(
         padding: const EdgeInsets.all(14),
@@ -349,9 +344,9 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: border),
           boxShadow: selected
-              ? const [
+              ? [
                   BoxShadow(
-                    color: Color(0x26D4AF37),
+                    color: AppColors.gold.withValues(alpha: 0.15),
                     blurRadius: 18,
                     spreadRadius: -6,
                   ),
@@ -369,9 +364,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                       Text(
                         _weekdayShort(d),
                         style: TextStyle(
-                          color: selected
-                              ? AppColors.gold
-                              : Colors.white.withValues(alpha: 0.5),
+                          color: selected ? AppColors.gold : AppColors.onDark50,
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.8,
@@ -399,10 +392,8 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                           : '${dayItems.length} APPOINTMENTS',
                       style: TextStyle(
                         color: isNone
-                            ? Colors.white.withValues(alpha: 0.45)
-                            : (selected
-                                  ? AppColors.gold
-                                  : Colors.white.withValues(alpha: 0.5)),
+                            ? AppColors.onDark45
+                            : (selected ? AppColors.gold : AppColors.onDark50),
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.8,
@@ -415,7 +406,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                           : '${(bookedMinutes / 60).toStringAsFixed((bookedMinutes % 60 == 0) ? 0 : 1)}h / 8h Booked',
                       style: TextStyle(
                         color: isNone
-                            ? const Color(0xFF10B981)
+                            ? AppColors.success
                             : (selected
                                   ? Colors.white.withValues(alpha: 0.88)
                                   : Colors.white.withValues(alpha: 0.78)),
@@ -435,7 +426,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                 minHeight: 5,
                 backgroundColor: Colors.white.withValues(alpha: 0.07),
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  isNone ? const Color(0xFF1F2937) : progressColor,
+                  isNone ? AppColors.slate700 : progressColor,
                 ),
               ),
             ),
@@ -456,24 +447,21 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
 
   Widget _timelineItem(_BarberAppointment a, {required _TimelineType type}) {
     final markerColor = switch (type) {
-      _TimelineType.inProgress => const Color(0xFF10B981),
+      _TimelineType.inProgress => AppColors.success,
       _TimelineType.nextUp => AppColors.gold,
-      _ => const Color(0xFF475772),
+      _ => AppColors.slate500,
     };
 
     final leftBorder = switch (type) {
-      _TimelineType.inProgress => const Color(0xFF10B981),
+      _TimelineType.inProgress => AppColors.success,
       _TimelineType.nextUp => AppColors.gold,
-      _ => const Color(0xFF334155),
+      _ => AppColors.slate600,
     };
 
     final badge = switch (type) {
-      _TimelineType.inProgress => _badge(
-        'IN PROGRESS',
-        const Color(0xFF10B981),
-      ),
+      _TimelineType.inProgress => _badge('IN PROGRESS', AppColors.success),
       _TimelineType.nextUp => _badge('NEXT UP', AppColors.gold, darkText: true),
-      _ => _badge('SCHEDULED', const Color(0xFF6B7893)),
+      _ => _badge('SCHEDULED', AppColors.slate300),
     };
 
     return Row(
@@ -507,7 +495,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                 style: TextStyle(
                   color: type == _TimelineType.nextUp
                       ? AppColors.gold
-                      : Colors.white.withValues(alpha: 0.7),
+                      : AppColors.onDark70,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -520,18 +508,18 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF070A12),
+              color: AppColors.ownerDashboardCard,
               borderRadius: BorderRadius.circular(16),
               border: Border(
                 left: BorderSide(color: leftBorder, width: 3),
-                top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-                right: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+                top: BorderSide(color: AppColors.onDark05),
+                right: BorderSide(color: AppColors.onDark05),
+                bottom: BorderSide(color: AppColors.onDark05),
               ),
               boxShadow: type == _TimelineType.nextUp
-                  ? const [
+                  ? [
                       BoxShadow(
-                        color: Color(0x26D4AF37),
+                        color: AppColors.gold.withValues(alpha: 0.15),
                         blurRadius: 20,
                         spreadRadius: -5,
                       ),
@@ -562,7 +550,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                   style: TextStyle(
                     color: type == _TimelineType.nextUp
                         ? AppColors.gold
-                        : Colors.white.withValues(alpha: 0.55),
+                        : AppColors.onDark55,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -576,7 +564,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.gold,
-                        foregroundColor: const Color(0xFF05070A),
+                        foregroundColor: AppColors.shellBackground,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -597,7 +585,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                       Text(
                         _timeRange(a),
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45),
+                          color: AppColors.onDark45,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -620,7 +608,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
                           style: TextStyle(
                             color: type == _TimelineType.inProgress
                                 ? AppColors.gold
-                                : Colors.white.withValues(alpha: 0.5),
+                                : AppColors.onDark50,
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.0,
@@ -680,7 +668,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> {
       child: Text(
         text,
         style: TextStyle(
-          color: darkText ? const Color(0xFF05070A) : color,
+          color: darkText ? AppColors.shellBackground : color,
           fontSize: 8,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.7,

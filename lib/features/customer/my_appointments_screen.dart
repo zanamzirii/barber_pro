@@ -49,7 +49,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
   void _showDetails(BuildContext context, _AppointmentView view) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF0B0F1A),
+      backgroundColor: AppColors.midnight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -79,24 +79,15 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
             const SizedBox(height: 8),
             Text(
               'Date: ${view.dateAndTime}',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.75),
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.onDark75, fontSize: 14),
             ),
             Text(
               'Branch: ${view.branchName}',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.75),
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.onDark75, fontSize: 14),
             ),
             Text(
               'Status: ${view.statusLabel}',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.75),
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.onDark75, fontSize: 14),
             ),
           ],
         ),
@@ -109,13 +100,13 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFF05070A),
+        backgroundColor: AppColors.shellBackground,
         body: Center(child: Text('Please log in again')),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: Stack(
         children: [
           const _SilkyBackground(),
@@ -212,7 +203,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                           child: Text(
                             'No appointments yet',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
+                              color: AppColors.onDark65,
                               fontSize: 14,
                             ),
                           ),
@@ -226,7 +217,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                                 ? 'No upcoming appointments'
                                 : 'No past appointments',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
+                              color: AppColors.onDark65,
                               fontSize: 14,
                             ),
                           ),
@@ -271,7 +262,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   letterSpacing: 4,
-                                  color: Colors.white.withValues(alpha: 0.35),
+                                  color: AppColors.onDark35,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -324,9 +315,7 @@ class _TabsHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: showUpcoming
-                        ? AppColors.gold
-                        : Colors.white.withValues(alpha: 0.10),
+                    color: showUpcoming ? AppColors.gold : AppColors.onDark10,
                     width: 2,
                   ),
                 ),
@@ -338,9 +327,7 @@ class _TabsHeader extends StatelessWidget {
                   fontSize: 11,
                   letterSpacing: 2.2,
                   fontWeight: FontWeight.w700,
-                  color: showUpcoming
-                      ? AppColors.text
-                      : Colors.white.withValues(alpha: 0.4),
+                  color: showUpcoming ? AppColors.text : AppColors.onDark40,
                 ),
               ),
             ),
@@ -354,9 +341,7 @@ class _TabsHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: !showUpcoming
-                        ? AppColors.gold
-                        : Colors.white.withValues(alpha: 0.10),
+                    color: !showUpcoming ? AppColors.gold : AppColors.onDark10,
                     width: 2,
                   ),
                 ),
@@ -368,9 +353,7 @@ class _TabsHeader extends StatelessWidget {
                   fontSize: 11,
                   letterSpacing: 2.2,
                   fontWeight: FontWeight.w700,
-                  color: !showUpcoming
-                      ? AppColors.text
-                      : Colors.white.withValues(alpha: 0.4),
+                  color: !showUpcoming ? AppColors.text : AppColors.onDark40,
                 ),
               ),
             ),
@@ -398,7 +381,7 @@ class _AppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = Colors.white.withValues(alpha: 0.4);
+    final muted = AppColors.onDark40;
     final body = Colors.white.withValues(alpha: 0.88);
 
     return Container(
@@ -408,7 +391,7 @@ class _AppointmentCard extends StatelessWidget {
           0xFF121620,
         ).withValues(alpha: showPrimaryActions ? 0.42 : 0.34),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppColors.onDark08),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,7 +421,7 @@ class _AppointmentCard extends StatelessWidget {
                         height: 1.15,
                         color: showPrimaryActions
                             ? AppColors.text
-                            : Colors.white.withValues(alpha: 0.75),
+                            : AppColors.onDark75,
                       ),
                     ),
                   ],
@@ -472,7 +455,7 @@ class _AppointmentCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Container(height: 1, color: Colors.white.withValues(alpha: 0.06)),
+          Container(height: 1, color: AppColors.onDark06),
           const SizedBox(height: 14),
           if (showPrimaryActions)
             Row(
@@ -505,9 +488,7 @@ class _AppointmentCard extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: onSecondary,
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.12),
-                      ),
+                      side: BorderSide(color: AppColors.onDark12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -516,7 +497,7 @@ class _AppointmentCard extends StatelessWidget {
                     child: Text(
                       'CANCEL',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.65),
+                        color: AppColors.onDark65,
                         fontSize: 10,
                         letterSpacing: 2.0,
                         fontWeight: FontWeight.w700,
@@ -532,7 +513,7 @@ class _AppointmentCard extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: onDetails,
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                  side: BorderSide(color: AppColors.onDark12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -541,7 +522,7 @@ class _AppointmentCard extends StatelessWidget {
                 child: Text(
                   'VIEW DETAILS',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.65),
+                    color: AppColors.onDark65,
                     fontSize: 10,
                     letterSpacing: 2.0,
                     fontWeight: FontWeight.w700,
@@ -569,12 +550,10 @@ class _StatusPill extends StatelessWidget {
               ? AppColors.gold.withValues(alpha: 0.12)
               : Colors.white.withValues(alpha: 0.07))
         : Colors.white.withValues(alpha: 0.07);
-    final fg = isActive && isConfirmed
-        ? AppColors.gold
-        : Colors.white.withValues(alpha: 0.40);
+    final fg = isActive && isConfirmed ? AppColors.gold : AppColors.onDark40;
     final border = isActive && isConfirmed
         ? AppColors.gold.withValues(alpha: 0.25)
-        : Colors.white.withValues(alpha: 0.10);
+        : AppColors.onDark10;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -625,7 +604,7 @@ class _InfoItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 9,
                   letterSpacing: 1.8,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: AppColors.onDark40,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -659,7 +638,11 @@ class _SilkyBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF05070A), Color(0xFF0B0F1A), Color(0xFF05070A)],
+          colors: [
+            AppColors.shellBackground,
+            AppColors.midnight,
+            AppColors.shellBackground,
+          ],
         ),
       ),
     );

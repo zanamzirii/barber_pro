@@ -58,7 +58,8 @@ class _SuperAdminInviteOwnerPanel extends StatefulWidget {
       _SuperAdminInviteOwnerPanelState();
 }
 
-class _SuperAdminInviteOwnerPanelState extends State<_SuperAdminInviteOwnerPanel> {
+class _SuperAdminInviteOwnerPanelState
+    extends State<_SuperAdminInviteOwnerPanel> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _shopController = TextEditingController();
@@ -150,7 +151,9 @@ class _SuperAdminInviteOwnerPanelState extends State<_SuperAdminInviteOwnerPanel
         'expiresAt': Timestamp.fromDate(now.add(const Duration(hours: 72))),
         if (accountExists != null) 'accountExists': accountExists,
       };
-      await FirebaseFirestore.instance.collection(_inviteCollection).add(payload);
+      await FirebaseFirestore.instance
+          .collection(_inviteCollection)
+          .add(payload);
       await _showResult(email, code, existing: false);
       _emailController.clear();
       _shopController.clear();
@@ -168,7 +171,9 @@ class _SuperAdminInviteOwnerPanelState extends State<_SuperAdminInviteOwnerPanel
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not send owner invite: [${e.code}] ${e.message}'),
+          content: Text(
+            'Could not send owner invite: [${e.code}] ${e.message}',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );

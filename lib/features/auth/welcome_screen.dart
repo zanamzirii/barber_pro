@@ -43,7 +43,7 @@ class WelcomeScreen extends StatelessWidget {
                     colors: [
                       Color(0x660B0F1A),
                       Color(0xCC0B0F1A),
-                      Color(0xFF0B0F1A),
+                      AppColors.midnight,
                     ],
                   ),
                 ),
@@ -107,7 +107,8 @@ class WelcomeScreen extends StatelessWidget {
                         onPressed: () => Navigator.of(context).push(
                           Motion.pageRoute(
                             builder: (_) => const LoginScreen(
-                              headerImageAsset: 'assets/images/login_screen.png',
+                              headerImageAsset:
+                                  'assets/images/login_screen.png',
                             ),
                           ),
                         ),
@@ -152,7 +153,7 @@ class WelcomeScreen extends StatelessWidget {
                       child: Text.rich(
                         TextSpan(
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: AppColors.onDark70,
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                           ),
@@ -179,7 +180,7 @@ class WelcomeScreen extends StatelessWidget {
                           TextSpan(
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: AppColors.onDark50,
                               fontFamily: 'Inter',
                             ),
                             children: const [
@@ -211,7 +212,7 @@ class WelcomeScreen extends StatelessWidget {
   Future<void> _showSupportOptions(BuildContext context) async {
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF121620),
+      backgroundColor: AppColors.surfaceSoft,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -227,7 +228,7 @@ class WelcomeScreen extends StatelessWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: AppColors.onDark20,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -245,9 +246,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   subtitle: Text(
                     'Open your mail app with support email',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
-                    ),
+                    style: TextStyle(color: AppColors.onDark55),
                   ),
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
@@ -272,9 +271,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   subtitle: Text(
                     'Common invite and email issues',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
-                    ),
+                    style: TextStyle(color: AppColors.onDark55),
                   ),
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
@@ -299,9 +296,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   subtitle: Text(
                     'Issue type, message, screenshot (optional)',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
-                    ),
+                    style: TextStyle(color: AppColors.onDark55),
                   ),
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
@@ -340,7 +335,7 @@ class WelcomeScreen extends StatelessWidget {
   Future<void> _showFaqSheet(BuildContext context) async {
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF121620),
+      backgroundColor: AppColors.surfaceSoft,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -410,7 +405,7 @@ class WelcomeScreen extends StatelessWidget {
       isDismissible: true,
       enableDrag: true,
       showDragHandle: true,
-      backgroundColor: const Color(0xFF121620),
+      backgroundColor: AppColors.surfaceSoft,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -459,7 +454,7 @@ class WelcomeScreen extends StatelessWidget {
                       const SizedBox(height: 14),
                       DropdownButtonFormField<String>(
                         initialValue: selectedIssue,
-                        dropdownColor: const Color(0xFF121620),
+                        dropdownColor: AppColors.surfaceSoft,
                         style: const TextStyle(color: AppColors.text),
                         decoration: const InputDecoration(
                           labelText: 'Issue type',
@@ -575,9 +570,7 @@ class WelcomeScreen extends StatelessWidget {
                           onPressed: () => Navigator.of(sheetContext).pop(),
                           child: Text(
                             'Cancel',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
-                            ),
+                            style: TextStyle(color: AppColors.onDark65),
                           ),
                         ),
                       ),

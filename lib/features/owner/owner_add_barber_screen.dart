@@ -507,7 +507,7 @@ class _OwnerAddBarberScreenState extends State<OwnerAddBarberScreen> {
             return const Center(
               child: Text(
                 'No branch assigned',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: AppColors.onDark70),
               ),
             );
           }

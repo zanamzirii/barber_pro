@@ -30,13 +30,13 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFF05070A),
+        backgroundColor: AppColors.shellBackground,
         body: Center(child: Text('Please log in again')),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
             .collection('appointments')
@@ -94,7 +94,7 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF070A12),
+                        color: AppColors.ownerDashboardCard,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: AppColors.gold.withValues(alpha: 0.2),
@@ -121,14 +121,12 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        '•',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.25),
-                        ),
+                        'â€¢',
+                        style: TextStyle(color: AppColors.onDark25),
                       ),
                     ),
                     _statDotRow(
-                      color: const Color(0xFF10B981),
+                      color: AppColors.success,
                       text: '$returningPercent% Returning',
                     ),
                   ],
@@ -136,18 +134,16 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
                 const SizedBox(height: 14),
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF070A12),
+                    color: AppColors.ownerDashboardCard,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
+                    border: Border.all(color: AppColors.onDark08),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.search_rounded,
-                        color: Color(0xFF586278),
+                        color: AppColors.slate400,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -156,9 +152,7 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
                             hintText: 'Search clients',
-                            hintStyle: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.35),
-                            ),
+                            hintStyle: TextStyle(color: AppColors.onDark35),
                             border: InputBorder.none,
                           ),
                         ),
@@ -184,18 +178,16 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF070A12),
+                      color: AppColors.ownerDashboardCard,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
-                      ),
+                      border: Border.all(color: AppColors.onDark06),
                     ),
                     child: Column(
                       children: [
                         Icon(
                           Icons.group_off_rounded,
                           size: 44,
-                          color: Colors.white.withValues(alpha: 0.25),
+                          color: AppColors.onDark25,
                         ),
                         const SizedBox(height: 10),
                         const Text(
@@ -233,7 +225,7 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
         Text(
           text,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.62),
+            color: AppColors.onDark62,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -252,20 +244,16 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
           decoration: BoxDecoration(
-            color: selected ? AppColors.gold : const Color(0xFF070A12),
+            color: selected ? AppColors.gold : AppColors.ownerDashboardCard,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected
-                  ? AppColors.gold
-                  : Colors.white.withValues(alpha: 0.12),
+              color: selected ? AppColors.gold : AppColors.onDark12,
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: selected
-                  ? const Color(0xFF05070A)
-                  : Colors.white.withValues(alpha: 0.7),
+              color: selected ? AppColors.shellBackground : AppColors.onDark70,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -279,20 +267,18 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
     final isVip = c.tier == _ClientTier.vip;
     final badgeBg = isVip
         ? AppColors.gold.withValues(alpha: 0.15)
-        : const Color(0xFF1E293B);
+        : AppColors.slate650;
     final badgeBorder = isVip
         ? AppColors.gold.withValues(alpha: 0.3)
-        : Colors.white.withValues(alpha: 0.08);
-    final badgeTextColor = isVip
-        ? AppColors.gold
-        : Colors.white.withValues(alpha: 0.65);
+        : AppColors.onDark08;
+    final badgeTextColor = isVip ? AppColors.gold : AppColors.onDark65;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF070A12),
+        color: AppColors.ownerDashboardCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: AppColors.onDark06),
       ),
       child: Row(
         children: [
@@ -336,7 +322,7 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
                         border: Border.all(color: badgeBorder),
                       ),
                       child: Text(
-                        '${c.visits} Visits • ${c.label}',
+                        '${c.visits} Visits â€¢ ${c.label}',
                         style: TextStyle(
                           color: badgeTextColor,
                           fontSize: 9,
@@ -350,7 +336,7 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
                 Text(
                   'Last visit: ${_formatDate(c.lastVisit)}',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: AppColors.onDark45,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -358,14 +344,14 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
                 Container(
                   height: 1,
                   margin: const EdgeInsets.symmetric(vertical: 7),
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: AppColors.onDark05,
                 ),
                 Text(
                   c.lastNote,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: AppColors.onDark50,
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
                   ),
@@ -374,10 +360,7 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
             ),
           ),
           const SizedBox(width: 6),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.white.withValues(alpha: 0.4),
-          ),
+          Icon(Icons.chevron_right_rounded, color: AppColors.onDark40),
         ],
       ),
     );
@@ -414,7 +397,7 @@ class _BarberClientsScreenState extends State<BarberClientsScreen> {
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.slate650,
         shape: BoxShape.circle,
         border: Border.all(
           color: AppColors.gold.withValues(alpha: 0.35),

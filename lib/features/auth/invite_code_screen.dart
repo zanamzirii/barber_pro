@@ -1,4 +1,4 @@
-﻿import 'package:barber_pro/app_shell.dart';
+import 'package:barber_pro/app_shell.dart';
 import 'package:barber_pro/core/auth/auth_debug_feedback.dart';
 import 'package:barber_pro/core/auth/user_role_service.dart';
 import 'package:barber_pro/core/auth/pending_onboarding_service.dart';
@@ -958,12 +958,12 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
       scaffoldBackgroundColor: AppColors.midnight,
       inputDecorationTheme: InputDecorationTheme(
         labelStyle: TextStyle(color: AppColors.gold.withValues(alpha: 0.9)),
-        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.42)),
+        hintStyle: TextStyle(color: AppColors.onDark42),
         filled: true,
         fillColor: const Color(0xFF141A2A),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: AppColors.onDark10),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -971,13 +971,13 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: AppColors.onDark10),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.gold,
-          foregroundColor: const Color(0xFF05070A),
+          foregroundColor: AppColors.shellBackground,
           textStyle: const TextStyle(fontWeight: FontWeight.w700),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -1110,7 +1110,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                                                   ? 1.15
                                                   : 1,
                                             ),
-                                            color: const Color(0xFF121620),
+                                            color: AppColors.surfaceSoft,
                                             boxShadow: [
                                               BoxShadow(
                                                 color: _codeErrorText == null
@@ -1438,7 +1438,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
         : invite.role.toUpperCase();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F1A),
+      backgroundColor: AppColors.midnight,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -1449,7 +1449,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF121620),
+                  color: AppColors.surfaceSoft,
                   borderRadius: BorderRadius.circular(26),
                   border: Border.all(
                     color: AppColors.gold.withValues(alpha: 0.45),
@@ -1486,7 +1486,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                         'Enter your invited email, then we will auto-select\nthe correct screen (Sign in or Sign up).',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.58),
+                          color: AppColors.onDark58,
                           fontSize: 13,
                           height: 1.45,
                         ),
@@ -1502,9 +1502,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF0F1422),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
+                        border: Border.all(color: AppColors.onDark08),
                       ),
                       child: Row(
                         children: [
@@ -1521,7 +1519,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                           Text(
                             'Code: ${invite.code}',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.52),
+                              color: AppColors.onDark52,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1560,7 +1558,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                           color: Colors.white.withValues(alpha: 0.28),
                         ),
                         filled: true,
-                        fillColor: const Color(0xFF121620),
+                        fillColor: AppColors.surfaceSoft,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 16,
@@ -1569,7 +1567,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide(
                             color: _smartEmailErrorText == null
-                                ? Colors.white.withValues(alpha: 0.08)
+                                ? AppColors.onDark08
                                 : const Color(0xFFEF4444),
                           ),
                         ),
@@ -1598,7 +1596,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       Text(
                         'Must match invited email: ${invite.email}',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45),
+                          color: AppColors.onDark45,
                           fontSize: 11,
                         ),
                       ),
@@ -1613,7 +1611,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                             : () => _runSmartGateCheck(invite),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.gold,
-                          foregroundColor: const Color(0xFF05070A),
+                          foregroundColor: AppColors.shellBackground,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -1630,7 +1628,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(0xFF05070A),
+                                    AppColors.shellBackground,
                                   ),
                                 ),
                               )
@@ -1653,7 +1651,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
         : invite.shopName!.trim();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F1A),
+      backgroundColor: AppColors.midnight,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -1679,7 +1677,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   'Finalize your administrative credentials to begin\nmanaging your barbershop.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.58),
+                    color: AppColors.onDark58,
                     fontSize: 14,
                     height: 1.45,
                   ),
@@ -1690,7 +1688,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF121620),
+                  color: AppColors.surfaceSoft,
                   borderRadius: BorderRadius.circular(26),
                   border: Border.all(
                     color: AppColors.gold.withValues(alpha: 0.55),
@@ -1745,7 +1743,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       child: Text(
                         'Assigned Email',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.52),
+                          color: AppColors.onDark52,
                           fontSize: 12,
                         ),
                       ),
@@ -1792,7 +1790,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 decoration: InputDecoration(
                   hintText: shopName,
                   filled: true,
-                  fillColor: const Color(0xFF121620),
+                  fillColor: AppColors.surfaceSoft,
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.28),
                     fontSize: 14,
@@ -1803,9 +1801,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
+                    borderSide: BorderSide(color: AppColors.onDark08),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -1830,7 +1826,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 decoration: InputDecoration(
                   hintText: 'e.g. 123 Main St, Cityville',
                   filled: true,
-                  fillColor: const Color(0xFF121620),
+                  fillColor: AppColors.surfaceSoft,
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.28),
                     fontSize: 14,
@@ -1845,9 +1841,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
+                    borderSide: BorderSide(color: AppColors.onDark08),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -1873,7 +1867,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 decoration: InputDecoration(
                   hintText: 'password',
                   filled: true,
-                  fillColor: const Color(0xFF121620),
+                  fillColor: AppColors.surfaceSoft,
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.28),
                     fontSize: 14,
@@ -1884,9 +1878,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
+                    borderSide: BorderSide(color: AppColors.onDark08),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -1902,7 +1894,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   onPressed: _loading ? null : _joinWithExistingAccount,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.gold,
-                    foregroundColor: const Color(0xFF05070A),
+                    foregroundColor: AppColors.shellBackground,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -1943,7 +1935,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   child: Text(
                     'Cancel Setup',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: AppColors.onDark50,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1989,7 +1981,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 'Create your professional profile to begin.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.58),
+                  color: AppColors.onDark58,
                   height: 1.45,
                   fontSize: 14,
                 ),
@@ -1999,7 +1991,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF121620),
+                color: AppColors.surfaceSoft,
                 borderRadius: BorderRadius.circular(26),
                 border: Border.all(
                   color: AppColors.gold.withValues(alpha: 0.55),
@@ -2033,7 +2025,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       Text(
                         'Invite Type',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.46),
+                          color: AppColors.onDark46,
                           fontSize: 11,
                         ),
                       ),
@@ -2054,7 +2046,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       Text(
                         'Branch',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.46),
+                          color: AppColors.onDark46,
                           fontSize: 11,
                         ),
                       ),
@@ -2074,9 +2066,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     padding: const EdgeInsets.only(top: 10),
                     decoration: BoxDecoration(
                       border: Border(
-                        top: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
+                        top: BorderSide(color: AppColors.onDark08),
                       ),
                     ),
                     child: Row(
@@ -2088,7 +2078,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                               Text(
                                 'Locked Email',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.45),
+                                  color: AppColors.onDark45,
                                   fontSize: 11,
                                 ),
                               ),
@@ -2129,12 +2119,10 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   color: Colors.white.withValues(alpha: 0.28),
                 ),
                 filled: true,
-                fillColor: const Color(0xFF121620),
+                fillColor: AppColors.surfaceSoft,
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
+                  borderSide: BorderSide(color: AppColors.onDark08),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -2163,12 +2151,10 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   color: Colors.white.withValues(alpha: 0.28),
                 ),
                 filled: true,
-                fillColor: const Color(0xFF121620),
+                fillColor: AppColors.surfaceSoft,
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
+                  borderSide: BorderSide(color: AppColors.onDark08),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -2182,7 +2168,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     _obscureNewPassword
                         ? Icons.visibility_off
                         : Icons.visibility,
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: AppColors.onDark45,
                   ),
                 ),
               ),
@@ -2228,12 +2214,10 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   color: Colors.white.withValues(alpha: 0.28),
                 ),
                 filled: true,
-                fillColor: const Color(0xFF121620),
+                fillColor: AppColors.surfaceSoft,
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
+                  borderSide: BorderSide(color: AppColors.onDark08),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -2247,7 +2231,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     _obscureConfirmPassword
                         ? Icons.visibility_off
                         : Icons.visibility,
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: AppColors.onDark45,
                   ),
                 ),
               ),
@@ -2266,7 +2250,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                         size: 16,
                         color: hasMinLength
                             ? AppColors.gold
-                            : Colors.white.withValues(alpha: 0.4),
+                            : AppColors.onDark40,
                       ),
                       const SizedBox(width: 10),
                       Text(
@@ -2274,7 +2258,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                         style: TextStyle(
                           color: hasMinLength
                               ? AppColors.gold
-                              : Colors.white.withValues(alpha: 0.4),
+                              : AppColors.onDark40,
                           fontSize: 11,
                         ),
                       ),
@@ -2286,9 +2270,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       Icon(
                         hasLetter ? Icons.check_rounded : Icons.cancel_rounded,
                         size: 16,
-                        color: hasLetter
-                            ? AppColors.gold
-                            : Colors.white.withValues(alpha: 0.4),
+                        color: hasLetter ? AppColors.gold : AppColors.onDark40,
                       ),
                       const SizedBox(width: 10),
                       Text(
@@ -2296,7 +2278,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                         style: TextStyle(
                           color: hasLetter
                               ? AppColors.gold
-                              : Colors.white.withValues(alpha: 0.4),
+                              : AppColors.onDark40,
                           fontSize: 11,
                         ),
                       ),
@@ -2308,9 +2290,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       Icon(
                         hasNumber ? Icons.check_rounded : Icons.cancel_rounded,
                         size: 16,
-                        color: hasNumber
-                            ? AppColors.gold
-                            : Colors.white.withValues(alpha: 0.4),
+                        color: hasNumber ? AppColors.gold : AppColors.onDark40,
                       ),
                       const SizedBox(width: 10),
                       Text(
@@ -2318,7 +2298,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                         style: TextStyle(
                           color: hasNumber
                               ? AppColors.gold
-                              : Colors.white.withValues(alpha: 0.4),
+                              : AppColors.onDark40,
                           fontSize: 11,
                         ),
                       ),
@@ -2330,9 +2310,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       Icon(
                         hasSymbol ? Icons.check_rounded : Icons.cancel_rounded,
                         size: 16,
-                        color: hasSymbol
-                            ? AppColors.gold
-                            : Colors.white.withValues(alpha: 0.4),
+                        color: hasSymbol ? AppColors.gold : AppColors.onDark40,
                       ),
                       const SizedBox(width: 10),
                       Text(
@@ -2340,7 +2318,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                         style: TextStyle(
                           color: hasSymbol
                               ? AppColors.gold
-                              : Colors.white.withValues(alpha: 0.4),
+                              : AppColors.onDark40,
                           fontSize: 11,
                         ),
                       ),
@@ -2357,7 +2335,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 onPressed: _loading ? null : _createAndJoin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.gold,
-                  foregroundColor: const Color(0xFF05070A),
+                  foregroundColor: AppColors.shellBackground,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
@@ -2398,7 +2376,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 child: Text(
                   'CANCEL REGISTRATION',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: AppColors.onDark45,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 2.2,
@@ -2416,7 +2394,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     final branchName = _displayBranchName(invite);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F1A),
+      backgroundColor: AppColors.midnight,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -2445,7 +2423,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       'Complete your profile connection to the sanctuary',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.58),
+                        color: AppColors.onDark58,
                         fontSize: 13,
                         height: 1.4,
                       ),
@@ -2456,7 +2434,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF121620),
+                      color: AppColors.surfaceSoft,
                       borderRadius: BorderRadius.circular(26),
                       border: Border.all(
                         color: AppColors.gold.withValues(alpha: 0.55),
@@ -2520,10 +2498,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                           ],
                         ),
                         const SizedBox(height: 14),
-                        Divider(
-                          color: Colors.white.withValues(alpha: 0.06),
-                          height: 1,
-                        ),
+                        Divider(color: AppColors.onDark06, height: 1),
                         const SizedBox(height: 14),
                         Text(
                           'CONNECTED EMAIL',
@@ -2539,7 +2514,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                           children: [
                             Icon(
                               Icons.lock_outline_rounded,
-                              color: Colors.white.withValues(alpha: 0.55),
+                              color: AppColors.onDark55,
                               size: 18,
                             ),
                             const SizedBox(width: 10),
@@ -2563,7 +2538,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                   Text(
                     'ACCOUNT PASSWORD',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.58),
+                      color: AppColors.onDark58,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 2.4,
@@ -2580,16 +2555,14 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                         color: Colors.white.withValues(alpha: 0.26),
                       ),
                       filled: true,
-                      fillColor: const Color(0xFF121620),
+                      fillColor: AppColors.surfaceSoft,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 18,
                         vertical: 18,
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
+                        borderSide: BorderSide(color: AppColors.onDark08),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -2616,7 +2589,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       onPressed: _loading ? null : _joinWithExistingAccount,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.gold,
-                        foregroundColor: const Color(0xFF05070A),
+                        foregroundColor: AppColors.shellBackground,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -2657,7 +2630,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       child: Text(
                         'Cancel',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: AppColors.onDark50,
                           fontSize: 14,
                         ),
                       ),
@@ -2686,7 +2659,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
           data: Theme.of(context).copyWith(
             inputDecorationTheme: InputDecorationTheme(
               filled: true,
-              fillColor: const Color(0xFF121620),
+              fillColor: AppColors.surfaceSoft,
               hintStyle: TextStyle(
                 color: Colors.white.withValues(alpha: 0.28),
                 fontSize: 17,
@@ -2699,10 +2672,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  width: 1,
-                ),
+                borderSide: BorderSide(color: AppColors.onDark08, width: 1),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -2761,7 +2731,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     vertical: 16,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF121620),
+                    color: AppColors.surfaceSoft,
                     borderRadius: BorderRadius.circular(26),
                     border: Border.all(
                       color: AppColors.gold.withValues(alpha: 0.55),
@@ -2798,7 +2768,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                               children: [
                                 Icon(
                                   Icons.lock_rounded,
-                                  color: Colors.white.withValues(alpha: 0.5),
+                                  color: AppColors.onDark50,
                                   size: 17,
                                 ),
                                 const SizedBox(width: 10),
@@ -2872,10 +2842,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 const SizedBox(height: 18),
                 Text(
                   'Branch Name',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: AppColors.onDark70, fontSize: 12),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -2898,10 +2865,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 const SizedBox(height: 14),
                 Text(
                   'Branch Location',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: AppColors.onDark70, fontSize: 12),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -2953,10 +2917,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 const SizedBox(height: 18),
                 Text(
                   'Full Name',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: AppColors.onDark70, fontSize: 12),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -2975,10 +2936,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 const SizedBox(height: 14),
                 Text(
                   'Password',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: AppColors.onDark70, fontSize: 12),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -2995,7 +2953,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                         _obscureNewPassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: AppColors.onDark45,
                       ),
                     ),
                   ),
@@ -3026,10 +2984,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                 const SizedBox(height: 14),
                 Text(
                   'Confirm Password',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: AppColors.onDark70, fontSize: 12),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -3047,7 +3002,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                         _obscureConfirmPassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: AppColors.onDark45,
                       ),
                     ),
                   ),
@@ -3075,7 +3030,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                             size: 16,
                             color: ownerHasMinLength
                                 ? AppColors.gold
-                                : Colors.white.withValues(alpha: 0.4),
+                                : AppColors.onDark40,
                           ),
                           const SizedBox(width: 10),
                           Text(
@@ -3083,7 +3038,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                             style: TextStyle(
                               color: ownerHasMinLength
                                   ? AppColors.gold
-                                  : Colors.white.withValues(alpha: 0.4),
+                                  : AppColors.onDark40,
                               fontSize: 11,
                             ),
                           ),
@@ -3099,7 +3054,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                             size: 16,
                             color: ownerHasLetter
                                 ? AppColors.gold
-                                : Colors.white.withValues(alpha: 0.4),
+                                : AppColors.onDark40,
                           ),
                           const SizedBox(width: 10),
                           Text(
@@ -3107,7 +3062,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                             style: TextStyle(
                               color: ownerHasLetter
                                   ? AppColors.gold
-                                  : Colors.white.withValues(alpha: 0.4),
+                                  : AppColors.onDark40,
                               fontSize: 11,
                             ),
                           ),
@@ -3123,7 +3078,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                             size: 16,
                             color: ownerHasNumber
                                 ? AppColors.gold
-                                : Colors.white.withValues(alpha: 0.4),
+                                : AppColors.onDark40,
                           ),
                           const SizedBox(width: 10),
                           Text(
@@ -3131,7 +3086,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                             style: TextStyle(
                               color: ownerHasNumber
                                   ? AppColors.gold
-                                  : Colors.white.withValues(alpha: 0.4),
+                                  : AppColors.onDark40,
                               fontSize: 11,
                             ),
                           ),
@@ -3147,7 +3102,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                             size: 16,
                             color: ownerHasSymbol
                                 ? AppColors.gold
-                                : Colors.white.withValues(alpha: 0.4),
+                                : AppColors.onDark40,
                           ),
                           const SizedBox(width: 10),
                           Text(
@@ -3155,7 +3110,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                             style: TextStyle(
                               color: ownerHasSymbol
                                   ? AppColors.gold
-                                  : Colors.white.withValues(alpha: 0.4),
+                                  : AppColors.onDark40,
                               fontSize: 11,
                             ),
                           ),
@@ -3172,7 +3127,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     onPressed: _loading ? null : _createAndJoin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.gold,
-                      foregroundColor: const Color(0xFF05070A),
+                      foregroundColor: AppColors.shellBackground,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
                       ),
@@ -3213,7 +3168,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                     child: Text(
                       'CANCEL SETUP',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.52),
+                        color: AppColors.onDark52,
                         fontSize: 11,
                         letterSpacing: 3.0,
                         fontWeight: FontWeight.w700,

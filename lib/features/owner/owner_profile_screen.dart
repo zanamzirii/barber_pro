@@ -23,7 +23,7 @@ class OwnerProfileScreen extends StatelessWidget {
               .snapshots();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: const Color(0xFF0B0F1A),
       body: SafeArea(
         child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: userStream,
@@ -51,9 +51,7 @@ class OwnerProfileScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFF0C0E12),
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.12),
-                      ),
+                      border: Border.all(color: AppColors.onDark12),
                     ),
                     child: IconButton(
                       onPressed: () {
@@ -216,7 +214,7 @@ Widget _sectionTitle(String text) {
     child: Text(
       text,
       style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.42),
+        color: AppColors.onDark42,
         fontSize: 11,
         fontWeight: FontWeight.w800,
         letterSpacing: 2.2,
@@ -228,9 +226,9 @@ Widget _sectionTitle(String text) {
 Widget _sectionPanel({required List<Widget> children}) {
   return Container(
     decoration: BoxDecoration(
-      color: const Color(0xFF0C0E12),
+      color: const Color(0xFF161B26),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      border: Border.all(color: AppColors.onDark06),
       boxShadow: const [
         BoxShadow(
           color: Color(0x26D4AF37),
@@ -280,7 +278,7 @@ Widget _avatarFallback() {
   return Container(
     color: const Color(0xFF1B2130),
     alignment: Alignment.center,
-    child: const Icon(Icons.person, color: Colors.white70, size: 44),
+    child: const Icon(Icons.person, color: AppColors.onDark70, size: 44),
   );
 }
 
@@ -305,11 +303,7 @@ class _ProfileActionTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
         decoration: BoxDecoration(
           border: showDivider
-              ? Border(
-                  bottom: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.05),
-                  ),
-                )
+              ? Border(bottom: BorderSide(color: AppColors.onDark05))
               : null,
         ),
         child: Row(
@@ -326,11 +320,7 @@ class _ProfileActionTile extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.white.withValues(alpha: 0.38),
-              size: 20,
-            ),
+            Icon(Icons.chevron_right, color: AppColors.onDark38, size: 20),
           ],
         ),
       ),

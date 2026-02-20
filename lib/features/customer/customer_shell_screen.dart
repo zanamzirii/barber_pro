@@ -66,7 +66,7 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFF05070A),
+        backgroundColor: AppColors.shellBackground,
         body: Stack(
           children: [
             IndexedStack(index: effectiveIndex, children: _screens),
@@ -82,11 +82,9 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
                     height: 72,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF121620).withValues(alpha: 0.9),
+                      color: AppColors.surfaceSoft.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
+                      border: Border.all(color: AppColors.onDark08),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.6),
@@ -183,7 +181,7 @@ class _NavItem extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.gold,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF05070A), width: 5),
+                border: Border.all(color: AppColors.shellBackground, width: 5),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.gold.withValues(alpha: 0.5),
@@ -191,7 +189,7 @@ class _NavItem extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Icon(icon, color: const Color(0xFF05070A), size: 28),
+              child: Icon(icon, color: AppColors.shellBackground, size: 28),
             ),
           ),
         ),

@@ -34,7 +34,7 @@ class OwnerUi {
 
   static TextStyle sectionLabelStyle() {
     return TextStyle(
-      color: Colors.white.withValues(alpha: 0.42),
+      color: AppColors.onDark42,
       fontSize: 10,
       letterSpacing: 2,
       fontWeight: FontWeight.w700,
@@ -56,13 +56,10 @@ class OwnerUi {
     return InputDecoration(
       labelText: label,
       helperText: helperText,
-      labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.75)),
-      helperStyle: TextStyle(
-        color: Colors.white.withValues(alpha: 0.45),
-        fontSize: 11,
-      ),
+      labelStyle: TextStyle(color: AppColors.onDark75),
+      helperStyle: TextStyle(color: AppColors.onDark45, fontSize: 11),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
+        borderSide: BorderSide(color: AppColors.onDark10),
         borderRadius: BorderRadius.circular(12),
       ),
       focusedBorder: OutlineInputBorder(

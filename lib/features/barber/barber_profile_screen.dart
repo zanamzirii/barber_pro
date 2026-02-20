@@ -30,7 +30,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
               .snapshots();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: SafeArea(
         child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: userStream,
@@ -66,11 +66,9 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0C0E12),
+                      color: AppColors.ownerDashboardCard,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.12),
-                      ),
+                      border: Border.all(color: AppColors.onDark12),
                     ),
                     child: IconButton(
                       onPressed: () {
@@ -119,7 +117,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     branchNameFromUser,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
+                      color: AppColors.onDark55,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -143,7 +141,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                         branchName,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.55),
+                          color: AppColors.onDark55,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -178,7 +176,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                         Text(
                           'RATING',
                           style: TextStyle(
-                            color: Color(0xFF6A7489),
+                            color: AppColors.slate350,
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.6,
@@ -190,7 +188,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                       width: 1,
                       height: 30,
                       margin: const EdgeInsets.symmetric(horizontal: 24),
-                      color: Colors.white.withValues(alpha: 0.12),
+                      color: AppColors.onDark12,
                     ),
                     const Column(
                       children: [
@@ -206,7 +204,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                         Text(
                           'SESSIONS',
                           style: TextStyle(
-                            color: Color(0xFF6A7489),
+                            color: AppColors.slate350,
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.6,
@@ -314,8 +312,10 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                       );
                     },
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: const Color(0x29EF4444),
-                      side: const BorderSide(color: Color(0x55EF4444)),
+                      backgroundColor: AppColors.dangerSoft,
+                      side: BorderSide(
+                        color: AppColors.danger.withValues(alpha: 0.33),
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -323,7 +323,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     child: const Text(
                       'LOG OUT',
                       style: TextStyle(
-                        color: Color(0xFFEF4444),
+                        color: AppColors.danger,
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 3.0,
@@ -346,7 +346,7 @@ Widget _sectionTitle(String text) {
     child: Text(
       text,
       style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.42),
+        color: AppColors.onDark42,
         fontSize: 11,
         fontWeight: FontWeight.w800,
         letterSpacing: 2.2,
@@ -358,12 +358,12 @@ Widget _sectionTitle(String text) {
 Widget _sectionPanel({required List<Widget> children}) {
   return Container(
     decoration: BoxDecoration(
-      color: const Color(0xFF0C0E12),
+      color: AppColors.ownerDashboardCard,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      boxShadow: const [
+      border: Border.all(color: AppColors.onDark06),
+      boxShadow: [
         BoxShadow(
-          color: Color(0x26D4AF37),
+          color: AppColors.gold.withValues(alpha: 0.15),
           blurRadius: 20,
           spreadRadius: -10,
           offset: Offset(0, 8),
@@ -381,8 +381,12 @@ Widget _profileAvatar(String avatar) {
     padding: const EdgeInsets.all(4),
     decoration: BoxDecoration(
       shape: BoxShape.circle,
-      gradient: const LinearGradient(
-        colors: [Color(0xFFECB913), Color(0xFF785A07), Color(0xFFECB913)],
+      gradient: LinearGradient(
+        colors: [
+          AppColors.gold,
+          AppColors.gold.withValues(alpha: 0.45),
+          AppColors.gold,
+        ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
@@ -390,7 +394,7 @@ Widget _profileAvatar(String avatar) {
     child: Container(
       padding: const EdgeInsets.all(2),
       decoration: const BoxDecoration(
-        color: Color(0xFF05070A),
+        color: AppColors.shellBackground,
         shape: BoxShape.circle,
       ),
       child: ClipOval(
@@ -408,9 +412,9 @@ Widget _profileAvatar(String avatar) {
 
 Widget _avatarFallback() {
   return Container(
-    color: const Color(0xFF1B2130),
+    color: AppColors.panel,
     alignment: Alignment.center,
-    child: const Icon(Icons.person, color: Colors.white70, size: 44),
+    child: const Icon(Icons.person, color: AppColors.onDark70, size: 44),
   );
 }
 
@@ -435,11 +439,7 @@ class _ActionTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
         decoration: BoxDecoration(
           border: showDivider
-              ? Border(
-                  bottom: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.05),
-                  ),
-                )
+              ? Border(bottom: BorderSide(color: AppColors.onDark05))
               : null,
         ),
         child: Row(
@@ -456,11 +456,7 @@ class _ActionTile extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.white.withValues(alpha: 0.38),
-              size: 20,
-            ),
+            Icon(Icons.chevron_right, color: AppColors.onDark38, size: 20),
           ],
         ),
       ),
@@ -479,9 +475,7 @@ class _VacationTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.onDark05)),
       ),
       child: Row(
         children: [
@@ -507,7 +501,7 @@ class _VacationTile extends StatelessWidget {
               value: enabled,
               onChanged: onChanged,
               activeThumbColor: AppColors.gold,
-              inactiveThumbColor: const Color(0xFF9AA3B2),
+              inactiveThumbColor: AppColors.slate200,
               inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
             ),
           ),
@@ -525,12 +519,12 @@ Widget _metricCard({
   return Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: const Color(0xFF0C0E12),
+      color: AppColors.ownerDashboardCard,
       borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      boxShadow: const [
+      border: Border.all(color: AppColors.onDark06),
+      boxShadow: [
         BoxShadow(
-          color: Color(0x26D4AF37),
+          color: AppColors.gold.withValues(alpha: 0.15),
           blurRadius: 20,
           spreadRadius: -10,
           offset: Offset(0, 8),
@@ -543,7 +537,7 @@ Widget _metricCard({
         Text(
           title,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: AppColors.onDark45,
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.2,
@@ -565,7 +559,7 @@ Widget _metricCard({
               TextSpan(
                 text: ' $suffix',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: AppColors.onDark50,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -582,12 +576,12 @@ Widget _earningsCard() {
   return Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: const Color(0xFF0C0E12),
+      color: AppColors.ownerDashboardCard,
       borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      boxShadow: const [
+      border: Border.all(color: AppColors.onDark06),
+      boxShadow: [
         BoxShadow(
-          color: Color(0x26D4AF37),
+          color: AppColors.gold.withValues(alpha: 0.15),
           blurRadius: 20,
           spreadRadius: -10,
           offset: Offset(0, 8),
@@ -603,7 +597,7 @@ Widget _earningsCard() {
               Text(
                 'ESTIMATED EARNINGS',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: AppColors.onDark45,
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.2,
@@ -628,7 +622,7 @@ Widget _earningsCard() {
             Text(
               'AVG RATING',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: AppColors.onDark45,
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,

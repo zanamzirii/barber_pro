@@ -268,7 +268,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       canPop: false,
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        backgroundColor: const Color(0xFF070A12),
+        backgroundColor: AppColors.surface,
         body: MediaQuery.removeViewInsets(
           removeBottom: true,
           context: context,
@@ -413,9 +413,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           ),
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              foregroundColor: const Color(0xFF070A12),
-                              shadowColor: Colors.transparent,
+                              backgroundColor: AppColors.transparent,
+                              foregroundColor: AppColors.surface,
+                              shadowColor: AppColors.transparent,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),

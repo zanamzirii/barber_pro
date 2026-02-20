@@ -34,7 +34,7 @@ class _SelectBranchScreenState extends State<SelectBranchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: Stack(
         children: [
           const _SilkyBackground(),
@@ -45,9 +45,7 @@ class _SelectBranchScreenState extends State<SelectBranchScreen> {
                   padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
                   decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.05),
-                      ),
+                      bottom: BorderSide(color: AppColors.onDark05),
                     ),
                   ),
                   child: Row(
@@ -109,18 +107,14 @@ class _SelectBranchScreenState extends State<SelectBranchScreen> {
                         size: 18,
                       ),
                       filled: true,
-                      fillColor: const Color(0xFF121620).withValues(alpha: 0.5),
+                      fillColor: AppColors.surfaceSoft.withValues(alpha: 0.5),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
+                        borderSide: BorderSide(color: AppColors.onDark08),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.10),
-                        ),
+                        borderSide: BorderSide(color: AppColors.onDark10),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -219,7 +213,8 @@ class _SelectBranchScreenState extends State<SelectBranchScreen> {
                                             image: DecorationImage(
                                               image: NetworkImage(imageUrl),
                                               fit: BoxFit.cover,
-                                              onError: (exception, stackTrace) {},
+                                              onError:
+                                                  (exception, stackTrace) {},
                                             ),
                                           ),
                                         ),
@@ -476,7 +471,11 @@ class _SilkyBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF05070A), Color(0xFF0B0F1A), Color(0xFF05070A)],
+          colors: [
+            AppColors.shellBackground,
+            AppColors.midnight,
+            AppColors.shellBackground,
+          ],
         ),
       ),
     );

@@ -55,13 +55,13 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFF05070A),
+        backgroundColor: AppColors.shellBackground,
         body: Center(child: Text('Please log in again')),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
             .collection('appointments')
@@ -132,7 +132,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                         width: 46,
                         height: 46,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF070A12),
+                          color: AppColors.ownerDashboardCard,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: AppColors.gold.withValues(alpha: 0.25),
@@ -168,11 +168,9 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF070A12),
+                    color: AppColors.ownerDashboardCard,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
+                    border: Border.all(color: AppColors.onDark06),
                   ),
                   child: Row(
                     children: [
@@ -193,7 +191,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                       ),
                       Switch(
                         value: _acceptWalkIns,
-                        activeThumbColor: const Color(0xFF05070A),
+                        activeThumbColor: AppColors.shellBackground,
                         activeTrackColor: AppColors.gold,
                         onChanged: (v) => setState(() => _acceptWalkIns = v),
                       ),
@@ -222,28 +220,20 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                 if (scheduled.isNotEmpty) ...[
                   Row(
                     children: [
-                      Expanded(
-                        child: Divider(
-                          color: Colors.white.withValues(alpha: 0.05),
-                        ),
-                      ),
+                      Expanded(child: Divider(color: AppColors.onDark05)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
                           '- BREAK 13:00 - 14:00 -',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.25),
+                            color: AppColors.onDark25,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 2,
                           ),
                         ),
                       ),
-                      Expanded(
-                        child: Divider(
-                          color: Colors.white.withValues(alpha: 0.05),
-                        ),
-                      ),
+                      Expanded(child: Divider(color: AppColors.onDark05)),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -260,7 +250,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF070A12),
+        color: AppColors.ownerDashboardCard,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.gold.withValues(alpha: 0.12)),
       ),
@@ -406,13 +396,15 @@ Widget _inProgressCard(
   return Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: const Color(0xFF070A12),
+      color: AppColors.ownerDashboardCard,
       borderRadius: BorderRadius.circular(18),
-      border: Border(
-        left: BorderSide(color: const Color(0xFF10B981), width: 3),
-      ),
-      boxShadow: const [
-        BoxShadow(color: Color(0x2610B981), blurRadius: 20, spreadRadius: -3),
+      border: Border(left: BorderSide(color: AppColors.success, width: 3)),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.success.withValues(alpha: 0.15),
+          blurRadius: 20,
+          spreadRadius: -3,
+        ),
       ],
     ),
     child: Column(
@@ -423,7 +415,7 @@ Widget _inProgressCard(
             const Text(
               'IN PROGRESS',
               style: TextStyle(
-                color: Color(0xFF10B981),
+                color: AppColors.success,
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.5,
@@ -433,7 +425,7 @@ Widget _inProgressCard(
             Text(
               'Started $startedMin min ago',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: AppColors.onDark55,
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
               ),
@@ -453,7 +445,7 @@ Widget _inProgressCard(
         Text(
           a.serviceName,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.65),
+            color: AppColors.onDark65,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -464,8 +456,8 @@ Widget _inProgressCard(
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 5,
-            backgroundColor: const Color(0xFF1F2937),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+            backgroundColor: AppColors.slate700,
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.success),
           ),
         ),
         const SizedBox(height: 12),
@@ -474,7 +466,7 @@ Widget _inProgressCard(
             Text(
               _timeRange(a),
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: AppColors.onDark45,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -486,7 +478,7 @@ Widget _inProgressCard(
                 onPressed: onComplete,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.gold,
-                  foregroundColor: const Color(0xFF05070A),
+                  foregroundColor: AppColors.shellBackground,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -512,7 +504,7 @@ Widget _nextUpCard(_BarberAppointment a, {required VoidCallback onView}) {
   return Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: const Color(0xFF070A12),
+      color: AppColors.ownerDashboardCard,
       borderRadius: BorderRadius.circular(18),
       border: Border(left: BorderSide(color: AppColors.gold, width: 3)),
     ),
@@ -567,7 +559,7 @@ Widget _nextUpCard(_BarberAppointment a, {required VoidCallback onView}) {
             Text(
               _timeRange(a),
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: AppColors.onDark45,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -602,9 +594,9 @@ Widget _scheduledCard(_BarberAppointment a) {
   return Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: const Color(0x66070A12),
+      color: AppColors.overlaySurface,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      border: Border.all(color: AppColors.onDark05),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -615,7 +607,7 @@ Widget _scheduledCard(_BarberAppointment a) {
               child: Text(
                 a.customerName,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.75),
+                  color: AppColors.onDark75,
                   fontSize: 29,
                   fontWeight: FontWeight.w700,
                 ),
@@ -624,13 +616,13 @@ Widget _scheduledCard(_BarberAppointment a) {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: AppColors.onDark05,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 'SCHEDULED',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: AppColors.onDark50,
                   fontSize: 7.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.8,
@@ -643,7 +635,7 @@ Widget _scheduledCard(_BarberAppointment a) {
         Text(
           a.serviceName,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: AppColors.onDark45,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -663,7 +655,7 @@ Widget _scheduledCard(_BarberAppointment a) {
             OutlinedButton(
               onPressed: null,
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                side: BorderSide(color: AppColors.onDark12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -671,7 +663,7 @@ Widget _scheduledCard(_BarberAppointment a) {
               child: Text(
                 'VIEW',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: AppColors.onDark40,
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.0,

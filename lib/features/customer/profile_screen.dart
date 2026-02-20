@@ -24,7 +24,7 @@ class ProfileScreen extends StatelessWidget {
               .snapshots();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: Stack(
         children: [
           const _SilkyBackground(),
@@ -102,7 +102,7 @@ class ProfileScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF121620).withValues(alpha: 0.85),
+                        color: AppColors.surfaceSoft.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color: AppColors.gold.withValues(alpha: 0.35),
@@ -136,21 +136,21 @@ class ProfileScreen extends StatelessWidget {
                                       errorBuilder:
                                           (context, error, stackTrace) {
                                             return Container(
-                                              color: const Color(0xFF1B2130),
+                                              color: AppColors.panel,
                                               alignment: Alignment.center,
                                               child: const Icon(
                                                 Icons.person,
-                                                color: Colors.white70,
+                                                color: AppColors.onDark70,
                                               ),
                                             );
                                           },
                                     )
                                   : Container(
-                                      color: const Color(0xFF1B2130),
+                                      color: AppColors.panel,
                                       alignment: Alignment.center,
                                       child: const Icon(
                                         Icons.person,
-                                        color: Colors.white70,
+                                        color: AppColors.onDark70,
                                       ),
                                     ),
                             ),
@@ -176,7 +176,7 @@ class ProfileScreen extends StatelessWidget {
                                     const Icon(
                                       Icons.edit,
                                       size: 15,
-                                      color: Color(0x66FFFFFF),
+                                      color: AppColors.onDark40,
                                     ),
                                   ],
                                 ),
@@ -185,7 +185,7 @@ class ProfileScreen extends StatelessWidget {
                                   email,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.55),
+                                    color: AppColors.onDark55,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -346,18 +346,14 @@ class _ProfileRow extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: Colors.white.withValues(alpha: 0.35),
-                ),
+                Icon(Icons.chevron_right, size: 20, color: AppColors.onDark35),
               ],
             ),
             const SizedBox(height: 12),
             Container(
               margin: const EdgeInsets.only(left: 38),
               height: 0.6,
-              color: Colors.white.withValues(alpha: 0.10),
+              color: AppColors.onDark10,
             ),
           ],
         ),
@@ -376,7 +372,11 @@ class _SilkyBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF05070A), Color(0xFF0B0F1A), Color(0xFF05070A)],
+          colors: [
+            AppColors.shellBackground,
+            AppColors.midnight,
+            AppColors.shellBackground,
+          ],
         ),
       ),
     );

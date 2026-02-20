@@ -21,6 +21,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   String? _selectedServiceId;
   String? _selectedBarberId; // '__any__' means any available barber
   bool _isSubmitting = false;
+  Future<_ConfirmViewData>? _confirmViewFuture;
+  String? _confirmViewFutureKey;
+  final Map<String, Stream<QuerySnapshot<Map<String, dynamic>>>>
+  _activeServicesByShopStream =
+      <String, Stream<QuerySnapshot<Map<String, dynamic>>>>{};
+  final Map<String, Stream<QuerySnapshot<Map<String, dynamic>>>>
+  _activeBarbersByShopStream =
+      <String, Stream<QuerySnapshot<Map<String, dynamic>>>>{};
 
   static const String _anyBarberId = '__any__';
 
@@ -60,12 +68,59 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     _selectedTime = _morningSlots.last;
   }
 
+  Stream<QuerySnapshot<Map<String, dynamic>>> _activeServicesStream(
+    String shopId,
+  ) {
+    return _activeServicesByShopStream.putIfAbsent(
+      shopId,
+      () => FirebaseFirestore.instance
+          .collection('shops')
+          .doc(shopId)
+          .collection('services')
+          .where('isActive', isEqualTo: true)
+          .snapshots(),
+    );
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _activeBarbersStream(
+    String shopId,
+  ) {
+    return _activeBarbersByShopStream.putIfAbsent(
+      shopId,
+      () => FirebaseFirestore.instance
+          .collection('shops')
+          .doc(shopId)
+          .collection('barbers')
+          .where('isActive', isEqualTo: true)
+          .snapshots(),
+    );
+  }
+
+  void _invalidateConfirmViewFuture() {
+    _confirmViewFuture = null;
+    _confirmViewFutureKey = null;
+  }
+
+  String _confirmFutureKeyForShop(String shopId) {
+    return '$shopId|${_selectedServiceId ?? ''}|${_selectedBarberId ?? ''}|'
+        '$_selectedDateIndex|${_selectedTime ?? ''}';
+  }
+
+  Future<_ConfirmViewData> _confirmViewDataFuture(String shopId) {
+    final key = _confirmFutureKeyForShop(shopId);
+    if (_confirmViewFuture == null || _confirmViewFutureKey != key) {
+      _confirmViewFutureKey = key;
+      _confirmViewFuture = _loadConfirmViewData(shopId);
+    }
+    return _confirmViewFuture!;
+  }
+
   @override
   Widget build(BuildContext context) {
     final shopId = widget.initialShopId;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: Stack(
         children: [
           const _SilkyBackground(),
@@ -123,9 +178,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      const Color(0xFF05070A).withValues(alpha: 0.0),
-                      const Color(0xFF05070A).withValues(alpha: 0.95),
-                      const Color(0xFF05070A),
+                      AppColors.shellBackground.withValues(alpha: 0.0),
+                      AppColors.shellBackground.withValues(alpha: 0.95),
+                      AppColors.shellBackground,
                     ],
                   ),
                 ),
@@ -134,7 +189,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.gold,
-                      foregroundColor: const Color(0xFF05070A),
+                      foregroundColor: AppColors.shellBackground,
                       disabledBackgroundColor: AppColors.gold.withValues(
                         alpha: 0.35,
                       ),
@@ -203,18 +258,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   Widget _buildSelectService(String shopId) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('shops')
-          .doc(shopId)
-          .collection('services')
-          .where('isActive', isEqualTo: true)
-          .snapshots(),
+      stream: _activeServicesStream(shopId),
       builder: (context, snapshot) {
         final docs = snapshot.data?.docs ?? const [];
 
         if (_selectedServiceId != null &&
             !docs.any((d) => d.id == _selectedServiceId)) {
           _selectedServiceId = null;
+          _invalidateConfirmViewFuture();
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -258,7 +309,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               padding: const EdgeInsets.only(bottom: 12),
               child: InkWell(
                 borderRadius: BorderRadius.circular(22),
-                onTap: () => setState(() => _selectedServiceId = doc.id),
+                onTap: () => setState(() {
+                  _selectedServiceId = doc.id;
+                  _invalidateConfirmViewFuture();
+                }),
                 child: _ServiceCard(
                   selected: isSelected,
                   name: name,
@@ -276,12 +330,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   Widget _buildSelectBarber(String shopId) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('shops')
-          .doc(shopId)
-          .collection('barbers')
-          .where('isActive', isEqualTo: true)
-          .snapshots(),
+      stream: _activeBarbersStream(shopId),
       builder: (context, snapshot) {
         final currentUid = FirebaseAuth.instance.currentUser?.uid;
         final docs = (snapshot.data?.docs ?? const []).where((d) {
@@ -298,6 +347,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             _selectedBarberId != null &&
             !docs.any((d) => d.id == _selectedBarberId)) {
           _selectedBarberId = null;
+          _invalidateConfirmViewFuture();
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -314,7 +364,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           children: [
             InkWell(
               borderRadius: BorderRadius.circular(22),
-              onTap: () => setState(() => _selectedBarberId = _anyBarberId),
+              onTap: () => setState(() {
+                _selectedBarberId = _anyBarberId;
+                _invalidateConfirmViewFuture();
+              }),
               child: _AnyBarberCard(
                 selected: _selectedBarberId == _anyBarberId,
               ),
@@ -347,7 +400,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(22),
-                  onTap: () => setState(() => _selectedBarberId = doc.id),
+                  onTap: () => setState(() {
+                    _selectedBarberId = doc.id;
+                    _invalidateConfirmViewFuture();
+                  }),
                   child: _BarberCard(
                     selected: isSelected,
                     name: name,
@@ -410,14 +466,17 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 ),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () => setState(() => _selectedDateIndex = index),
+                  onTap: () => setState(() {
+                    _selectedDateIndex = index;
+                    _invalidateConfirmViewFuture();
+                  }),
                   child: Container(
                     width: 64,
                     height: 80,
                     decoration: BoxDecoration(
                       color: selected
                           ? AppColors.gold.withValues(alpha: 0.15)
-                          : const Color(0xFF121620).withValues(alpha: 0.4),
+                          : AppColors.surfaceSoft.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: selected
@@ -435,7 +494,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                             letterSpacing: 1.2,
                             color: selected
                                 ? AppColors.gold.withValues(alpha: 0.8)
-                                : Colors.white.withValues(alpha: 0.35),
+                                : AppColors.onDark35,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -476,19 +535,28 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           title: 'MORNING',
           slots: _morningSlots,
           selectedTime: _selectedTime,
-          onSelect: (slot) => setState(() => _selectedTime = slot),
+          onSelect: (slot) => setState(() {
+            _selectedTime = slot;
+            _invalidateConfirmViewFuture();
+          }),
         ),
         _SlotSection(
           title: 'AFTERNOON',
           slots: _afternoonSlots,
           selectedTime: _selectedTime,
-          onSelect: (slot) => setState(() => _selectedTime = slot),
+          onSelect: (slot) => setState(() {
+            _selectedTime = slot;
+            _invalidateConfirmViewFuture();
+          }),
         ),
         _SlotSection(
           title: 'EVENING',
           slots: _eveningSlots,
           selectedTime: _selectedTime,
-          onSelect: (slot) => setState(() => _selectedTime = slot),
+          onSelect: (slot) => setState(() {
+            _selectedTime = slot;
+            _invalidateConfirmViewFuture();
+          }),
         ),
       ],
     );
@@ -496,7 +564,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   Widget _buildConfirmBooking(String shopId) {
     return FutureBuilder<_ConfirmViewData>(
-      future: _loadConfirmViewData(shopId),
+      future: _confirmViewDataFuture(shopId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -524,9 +592,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: const Color(0xFF121620).withValues(alpha: 0.4),
+                color: AppColors.surfaceSoft.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                border: Border.all(color: AppColors.onDark08),
               ),
               child: Column(
                 children: [
@@ -549,7 +617,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                           data.branchAddress,
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.white.withValues(alpha: 0.62),
+                            color: AppColors.onDark62,
                             height: 1.3,
                           ),
                         ),
@@ -618,7 +686,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   Container(
                     margin: const EdgeInsets.only(top: 14),
                     height: 1,
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: AppColors.onDark06,
                   ),
                   const SizedBox(height: 14),
                   Row(
@@ -627,7 +695,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                         'Total Amount',
                         style: TextStyle(
                           fontSize: 15,
-                          color: Colors.white.withValues(alpha: 0.62),
+                          color: AppColors.onDark62,
                         ),
                       ),
                       const Spacer(),
@@ -652,7 +720,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 'BOOKING POLICY',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: AppColors.onDark50,
                   letterSpacing: 3.2,
                   fontWeight: FontWeight.w700,
                 ),
@@ -752,7 +820,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     final amount = price % 1 == 0
         ? price.toInt().toString()
         : price.toStringAsFixed(2);
-    if (currency == 'GBP') return 'Ã‚Â£$amount';
+    if (currency == 'GBP') return 'Ãƒâ€šÃ‚Â£$amount';
     if (currency == 'USD') return '\$$amount';
     return '$currency $amount';
   }
@@ -775,7 +843,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
     setState(() => _isSubmitting = true);
     try {
-      final data = await _loadConfirmViewData(shopId);
+      final data = await _confirmViewDataFuture(shopId);
       final startAt = _buildStartAt();
       final customerName = (user.displayName?.trim().isNotEmpty ?? false)
           ? user.displayName!.trim()
@@ -976,7 +1044,7 @@ class _SlotSection extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               letterSpacing: 2.2,
-              color: Colors.white.withValues(alpha: 0.3),
+              color: AppColors.onDark30,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -996,7 +1064,7 @@ class _SlotSection extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: selected
                         ? AppColors.gold.withValues(alpha: 0.15)
-                        : const Color(0xFF121620).withValues(alpha: 0.4),
+                        : AppColors.surfaceSoft.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: selected
@@ -1043,7 +1111,7 @@ class _ServiceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cardColor = selected
         ? AppColors.gold.withValues(alpha: 0.05)
-        : const Color(0xFF121620).withValues(alpha: 0.4);
+        : AppColors.surfaceSoft.withValues(alpha: 0.4);
 
     final borderColor = selected
         ? AppColors.gold.withValues(alpha: 0.8)
@@ -1085,7 +1153,7 @@ class _ServiceCard extends StatelessWidget {
               Text(
                 priceLabel,
                 style: TextStyle(
-                  color: selected ? AppColors.gold : Colors.white70,
+                  color: selected ? AppColors.gold : AppColors.onDark70,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
                   fontSize: 16,
@@ -1099,7 +1167,7 @@ class _ServiceCard extends StatelessWidget {
             child: Text(
               description,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: AppColors.onDark50,
                 fontSize: 10,
                 height: 1.45,
               ),
@@ -1113,7 +1181,7 @@ class _ServiceCard extends StatelessWidget {
                 size: 12,
                 color: selected
                     ? AppColors.gold.withValues(alpha: 0.9)
-                    : Colors.white.withValues(alpha: 0.35),
+                    : AppColors.onDark35,
               ),
               const SizedBox(width: 6),
               Text(
@@ -1124,7 +1192,7 @@ class _ServiceCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: selected
                       ? AppColors.gold.withValues(alpha: 0.9)
-                      : Colors.white.withValues(alpha: 0.35),
+                      : AppColors.onDark35,
                 ),
               ),
             ],
@@ -1147,7 +1215,7 @@ class _AnyBarberCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: selected
             ? AppColors.gold.withValues(alpha: 0.05)
-            : const Color(0xFF121620).withValues(alpha: 0.4),
+            : AppColors.surfaceSoft.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: selected
@@ -1211,7 +1279,7 @@ class _AnyBarberCard extends StatelessWidget {
                 Text(
                   'Best for immediate service\navailability',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: AppColors.onDark50,
                     fontSize: 10,
                     height: 1.35,
                   ),
@@ -1249,7 +1317,7 @@ class _BarberCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: selected
             ? AppColors.gold.withValues(alpha: 0.05)
-            : const Color(0xFF121620).withValues(alpha: 0.4),
+            : AppColors.surfaceSoft.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: selected
@@ -1266,7 +1334,7 @@ class _BarberCard extends StatelessWidget {
             padding: const EdgeInsets.all(1),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(color: AppColors.onDark10),
             ),
             child: ClipOval(
               child: ColorFiltered(
@@ -1298,11 +1366,11 @@ class _BarberCard extends StatelessWidget {
                   // Keep layout stable when remote avatar fails.
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      color: const Color(0xFF1B2130),
+                      color: AppColors.panel,
                       alignment: Alignment.center,
                       child: const Icon(
                         Icons.person,
-                        color: Colors.white70,
+                        color: AppColors.onDark70,
                         size: 20,
                       ),
                     );
@@ -1328,10 +1396,7 @@ class _BarberCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   title,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 10,
-                  ),
+                  style: TextStyle(color: AppColors.onDark50, fontSize: 10),
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -1372,7 +1437,11 @@ class _SilkyBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF05070A), Color(0xFF0B0F1A), Color(0xFF05070A)],
+          colors: [
+            AppColors.shellBackground,
+            AppColors.midnight,
+            AppColors.shellBackground,
+          ],
         ),
       ),
     );
@@ -1409,7 +1478,7 @@ class _ConfirmRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   letterSpacing: 1.6,
-                  color: Colors.white.withValues(alpha: 0.38),
+                  color: AppColors.onDark38,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1449,7 +1518,7 @@ class _PolicyItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               height: 1.45,
-              color: Colors.white.withValues(alpha: 0.45),
+              color: AppColors.onDark45,
             ),
           ),
         ),

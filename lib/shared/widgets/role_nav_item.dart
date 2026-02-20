@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:barber_pro/core/motion.dart';
+import 'package:barber_pro/core/theme/app_colors.dart';
 
 class RoleNavItem extends StatelessWidget {
   const RoleNavItem({
@@ -45,7 +46,7 @@ class RoleNavItem extends StatelessWidget {
             avatarCircle
                 ? CircleAvatar(
                     radius: avatarRadius,
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    backgroundColor: AppColors.onDark20,
                     child: Icon(
                       icon,
                       size: avatarIconSize,

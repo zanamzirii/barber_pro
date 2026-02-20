@@ -27,7 +27,7 @@ class OnboardingScreen extends StatelessWidget {
           backgroundColor: WidgetStateProperty.resolveWith<Color?>(
             (states) => states.contains(WidgetState.pressed)
                 ? AppColors.gold
-                : Colors.transparent,
+                : AppColors.transparent,
           ),
           foregroundColor: WidgetStateProperty.resolveWith<Color?>(
             (states) => states.contains(WidgetState.pressed)
@@ -132,7 +132,8 @@ class OnboardingScreen extends StatelessWidget {
                         onPressed: () => Navigator.of(context).push(
                           Motion.pageRoute(
                             builder: (_) => const OnboardingScreenTwo(
-                              illustrationAsset: 'assets/images/onboarding_2.png',
+                              illustrationAsset:
+                                  'assets/images/onboarding_2.png',
                             ),
                           ),
                         ),

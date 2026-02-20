@@ -2,6 +2,7 @@ import 'package:barber_pro/app_shell.dart';
 import 'package:barber_pro/core/auth/account_deletion_service.dart';
 import 'package:barber_pro/core/motion.dart';
 import 'package:barber_pro/core/theme/app_colors.dart';
+import 'package:barber_pro/core/theme/theme_mode_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -16,6 +17,116 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _deleting = false;
   bool _obscurePassword = true;
+
+  String _themeLabel(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'Light';
+      case ThemeMode.dark:
+        return 'Dark';
+      case ThemeMode.system:
+        return 'System';
+    }
+  }
+
+  Future<void> _showThemePicker() async {
+    final selected = await showModalBottomSheet<ThemeMode>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final mode = ThemeModeController.instance.value;
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Choose Theme',
+                  style: TextStyle(
+                    color: AppColors.text,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Applies to the entire app for all roles.',
+                  style: TextStyle(color: AppColors.muted),
+                ),
+                const SizedBox(height: 14),
+                _themeOption(
+                  context,
+                  label: 'Dark',
+                  mode: ThemeMode.dark,
+                  selected: mode == ThemeMode.dark,
+                ),
+                _themeOption(
+                  context,
+                  label: 'Light',
+                  mode: ThemeMode.light,
+                  selected: mode == ThemeMode.light,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected == null) return;
+    await ThemeModeController.instance.setThemeMode(selected);
+    if (mounted) setState(() {});
+  }
+
+  Widget _themeOption(
+    BuildContext context, {
+    required String label,
+    required ThemeMode mode,
+    required bool selected,
+  }) {
+    return InkWell(
+      onTap: () => Navigator.of(context).pop(mode),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.ownerDashboardCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? AppColors.gold.withValues(alpha: 0.55)
+                : AppColors.onDark08,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.text,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? AppColors.gold : AppColors.muted,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -208,6 +319,13 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
             ),
             child: Column(
               children: [
+                _SettingsTile(
+                  icon: Icons.palette_outlined,
+                  label: 'Appearance',
+                  subtitle:
+                      'Current: ${_themeLabel(ThemeModeController.instance.value)}',
+                  onTap: _showThemePicker,
+                ),
                 _SettingsTile(
                   icon: Icons.notifications_none_rounded,
                   label: 'Notifications',

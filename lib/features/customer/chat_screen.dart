@@ -7,10 +7,10 @@ class ChatScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       appBar: AppBar(
         title: const Text('Chat'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -54,9 +54,9 @@ class _ChatTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF121620),
+        color: AppColors.surfaceSoft,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppColors.onDark08),
       ),
       child: Row(
         children: [

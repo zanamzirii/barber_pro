@@ -25,13 +25,13 @@ class HomeScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFF05070A),
+        backgroundColor: AppColors.shellBackground,
         body: Center(child: Text('Please log in again')),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
             .collection('users')
@@ -169,7 +169,7 @@ class _LiveBookingPanelState extends State<_LiveBookingPanel> {
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
-                              color: const Color(0xFF121620),
+                              color: AppColors.surfaceSoft,
                               alignment: Alignment.center,
                               child: const Icon(
                                 Icons.image_not_supported_outlined,
@@ -187,9 +187,15 @@ class _LiveBookingPanelState extends State<_LiveBookingPanel> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                const Color(0xFF05070A).withValues(alpha: 0.0),
-                                const Color(0xFF05070A).withValues(alpha: 0.4),
-                                const Color(0xFF05070A).withValues(alpha: 0.92),
+                                AppColors.shellBackground.withValues(
+                                  alpha: 0.0,
+                                ),
+                                AppColors.shellBackground.withValues(
+                                  alpha: 0.4,
+                                ),
+                                AppColors.shellBackground.withValues(
+                                  alpha: 0.92,
+                                ),
                               ],
                             ),
                           ),
@@ -209,15 +215,13 @@ class _LiveBookingPanelState extends State<_LiveBookingPanel> {
                               color: const Color(
                                 0xFF05070A,
                               ).withValues(alpha: 0.4),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.1),
-                              ),
+                              border: Border.all(color: AppColors.onDark10),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.close,
                               size: 20,
-                              color: Colors.white70,
+                              color: AppColors.onDark70,
                             ),
                           ),
                         ),
@@ -327,7 +331,7 @@ class _LiveBookingPanelState extends State<_LiveBookingPanel> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.gold,
-                    foregroundColor: const Color(0xFF05070A),
+                    foregroundColor: AppColors.shellBackground,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -420,7 +424,7 @@ class _NoBranchHomeState extends StatelessWidget {
                               gradient: RadialGradient(
                                 colors: [
                                   AppColors.gold.withValues(alpha: 0.12),
-                                  Colors.transparent,
+                                  AppColors.transparent,
                                 ],
                               ),
                             ),
@@ -482,7 +486,7 @@ class _NoBranchHomeState extends StatelessWidget {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.gold,
-                            foregroundColor: const Color(0xFF05070A),
+                            foregroundColor: AppColors.shellBackground,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -527,6 +531,42 @@ class _BranchSelectionScreen extends StatefulWidget {
 
 class _BranchSelectionScreenState extends State<_BranchSelectionScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final Stream<QuerySnapshot<Map<String, dynamic>>> _shopsStream =
+      FirebaseFirestore.instance.collection('shops').snapshots();
+  final Map<String, Stream<QuerySnapshot<Map<String, dynamic>>>>
+  _activeBarbersByShopStream =
+      <String, Stream<QuerySnapshot<Map<String, dynamic>>>>{};
+  final Map<String, Stream<QuerySnapshot<Map<String, dynamic>>>>
+  _activeServicesByShopStream =
+      <String, Stream<QuerySnapshot<Map<String, dynamic>>>>{};
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _activeBarbersStream(
+    String shopId,
+  ) {
+    return _activeBarbersByShopStream.putIfAbsent(
+      shopId,
+      () => FirebaseFirestore.instance
+          .collection('shops')
+          .doc(shopId)
+          .collection('barbers')
+          .where('isActive', isEqualTo: true)
+          .snapshots(),
+    );
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _activeServicesStream(
+    String shopId,
+  ) {
+    return _activeServicesByShopStream.putIfAbsent(
+      shopId,
+      () => FirebaseFirestore.instance
+          .collection('shops')
+          .doc(shopId)
+          .collection('services')
+          .where('isActive', isEqualTo: true)
+          .snapshots(),
+    );
+  }
 
   @override
   void dispose() {
@@ -546,7 +586,7 @@ class _BranchSelectionScreenState extends State<_BranchSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF05070A),
+      backgroundColor: AppColors.shellBackground,
       body: Stack(
         children: [
           const _SilkyBackground(),
@@ -557,9 +597,7 @@ class _BranchSelectionScreenState extends State<_BranchSelectionScreen> {
                   padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
                   decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.05),
-                      ),
+                      bottom: BorderSide(color: AppColors.onDark05),
                     ),
                   ),
                   child: Row(
@@ -617,12 +655,10 @@ class _BranchSelectionScreenState extends State<_BranchSelectionScreen> {
                         color: AppColors.gold,
                       ),
                       filled: true,
-                      fillColor: const Color(0xFF121620).withValues(alpha: 0.6),
+                      fillColor: AppColors.surfaceSoft.withValues(alpha: 0.6),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
+                        borderSide: BorderSide(color: AppColors.onDark08),
                       ),
                     ),
                   ),
@@ -630,9 +666,7 @@ class _BranchSelectionScreenState extends State<_BranchSelectionScreen> {
                 const SizedBox(height: 14),
                 Expanded(
                   child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                    stream: FirebaseFirestore.instance
-                        .collection('shops')
-                        .snapshots(),
+                    stream: _shopsStream,
                     builder: (context, snapshot) {
                       final docs = snapshot.data?.docs ?? [];
                       final query = _searchController.text.trim().toLowerCase();
@@ -706,7 +740,8 @@ class _BranchSelectionScreenState extends State<_BranchSelectionScreen> {
                                             image: DecorationImage(
                                               image: NetworkImage(imageUrl),
                                               fit: BoxFit.cover,
-                                              onError: (exception, stackTrace) {},
+                                              onError:
+                                                  (exception, stackTrace) {},
                                             ),
                                           ),
                                         ),
@@ -802,16 +837,10 @@ class _BranchSelectionScreenState extends State<_BranchSelectionScreen> {
                                                         Map<String, dynamic>
                                                       >
                                                     >(
-                                                      stream: FirebaseFirestore
-                                                          .instance
-                                                          .collection('shops')
-                                                          .doc(doc.id)
-                                                          .collection('barbers')
-                                                          .where(
-                                                            'isActive',
-                                                            isEqualTo: true,
-                                                          )
-                                                          .snapshots(),
+                                                      stream:
+                                                          _activeBarbersStream(
+                                                            doc.id,
+                                                          ),
                                                       builder: (context, barbersSnap) {
                                                         final count =
                                                             barbersSnap
@@ -852,18 +881,10 @@ class _BranchSelectionScreenState extends State<_BranchSelectionScreen> {
                                                         Map<String, dynamic>
                                                       >
                                                     >(
-                                                      stream: FirebaseFirestore
-                                                          .instance
-                                                          .collection('shops')
-                                                          .doc(doc.id)
-                                                          .collection(
-                                                            'services',
-                                                          )
-                                                          .where(
-                                                            'isActive',
-                                                            isEqualTo: true,
-                                                          )
-                                                          .snapshots(),
+                                                      stream:
+                                                          _activeServicesStream(
+                                                            doc.id,
+                                                          ),
                                                       builder: (context, servicesSnap) {
                                                         final count =
                                                             servicesSnap
@@ -931,7 +952,11 @@ class _SilkyBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF05070A), Color(0xFF0B0F1A), Color(0xFF05070A)],
+          colors: [
+            AppColors.shellBackground,
+            AppColors.midnight,
+            AppColors.shellBackground,
+          ],
         ),
       ),
     );
@@ -967,7 +992,7 @@ class _HomeHeader extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 8,
                   letterSpacing: 3.9,
-                  color: Color(0xFFD4AF37),
+                  color: AppColors.gold,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1050,9 +1075,9 @@ class _HeaderAvatar extends StatelessWidget {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: const Color(0xFF1B2130),
+              color: AppColors.panel,
               alignment: Alignment.center,
-              child: const Icon(Icons.person, color: Colors.white70),
+              child: const Icon(Icons.person, color: AppColors.onDark70),
             );
           },
         ),
@@ -1084,7 +1109,7 @@ class _NextSessionCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF121620).withValues(alpha: 0.85),
+              color: AppColors.surfaceSoft.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
             ),
@@ -1153,7 +1178,7 @@ class _NextSessionCard extends StatelessWidget {
                                 ),
                                 SizedBox(width: 8),
                                 Text(
-                                  'Ã¢â‚¬Â¢',
+                                  'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: AppColors.muted,
@@ -1176,7 +1201,7 @@ class _NextSessionCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Divider(color: Colors.white.withValues(alpha: 0.05), height: 1),
+                Divider(color: AppColors.onDark05, height: 1),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1199,11 +1224,11 @@ class _NextSessionCard extends StatelessWidget {
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
-                                  color: const Color(0xFF1B2130),
+                                  color: AppColors.panel,
                                   alignment: Alignment.center,
                                   child: const Icon(
                                     Icons.person,
-                                    color: Colors.white70,
+                                    color: AppColors.onDark70,
                                     size: 16,
                                   ),
                                 );
@@ -1220,7 +1245,7 @@ class _NextSessionCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 10,
                                 letterSpacing: 2,
-                                color: Color(0x66FFFFFF),
+                                color: AppColors.onDark40,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1228,7 +1253,7 @@ class _NextSessionCard extends StatelessWidget {
                               'Marcus V.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xCCFFFFFF),
+                                color: AppColors.onDark80,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.3,
                               ),
@@ -1250,11 +1275,9 @@ class _NextSessionCard extends StatelessWidget {
                             ),
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.05),
+                              color: AppColors.onDark05,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.10),
-                              ),
+                              border: Border.all(color: AppColors.onDark10),
                             ),
                             child: const Text(
                               'RESCHEDULE',
@@ -1262,7 +1285,7 @@ class _NextSessionCard extends StatelessWidget {
                                 fontSize: 9,
                                 letterSpacing: 1.4,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xB3FFFFFF),
+                                color: AppColors.onDark70,
                               ),
                             ),
                           ),
@@ -1277,15 +1300,13 @@ class _NextSessionCard extends StatelessWidget {
                             height: 36,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              color: Colors.white.withValues(alpha: 0.05),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.10),
-                              ),
+                              color: AppColors.onDark05,
+                              border: Border.all(color: AppColors.onDark10),
                             ),
                             child: const Icon(
                               Icons.directions,
                               size: 15,
-                              color: Color(0xB3FFFFFF),
+                              color: AppColors.onDark70,
                             ),
                           ),
                         ),
