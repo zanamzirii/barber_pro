@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../role_switcher.dart';
 import '../../shared/screens/app_settings_screen.dart';
 import '../../shared/data/firestore_data_mapper.dart';
+import 'barber_availability_screen.dart';
 
 class BarberProfileScreen extends StatefulWidget {
   const BarberProfileScreen({super.key});
@@ -17,8 +18,6 @@ class BarberProfileScreen extends StatefulWidget {
 }
 
 class _BarberProfileScreenState extends State<BarberProfileScreen> {
-  bool _vacationMode = false;
-
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -220,24 +219,20 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                 _sectionPanel(
                   children: [
                     _ActionTile(
-                      icon: Icons.content_cut_rounded,
-                      label: 'Services I Perform',
-                      onTap: () {},
-                    ),
-                    _ActionTile(
                       icon: Icons.event_available_rounded,
                       label: 'My Availability',
-                      onTap: () {},
-                    ),
-                    _VacationTile(
-                      enabled: _vacationMode,
-                      onChanged: (v) => setState(() => _vacationMode = v),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          Motion.pageRoute(
+                            builder: (_) => const BarberAvailabilityScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _ActionTile(
-                      icon: Icons.free_breakfast_rounded,
-                      label: 'Break Hours',
+                      icon: Icons.content_cut_rounded,
+                      label: 'My Services',
                       onTap: () {},
-                      showDivider: false,
                     ),
                   ],
                 ),
@@ -459,53 +454,6 @@ class _ActionTile extends StatelessWidget {
             Icon(Icons.chevron_right, color: AppColors.onDark38, size: 20),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _VacationTile extends StatelessWidget {
-  const _VacationTile({required this.enabled, required this.onChanged});
-
-  final bool enabled;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.onDark05)),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.beach_access_rounded,
-            color: AppColors.gold,
-            size: 22,
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Text(
-              'Vacation Mode',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 44,
-            child: Switch(
-              value: enabled,
-              onChanged: onChanged,
-              activeThumbColor: AppColors.gold,
-              inactiveThumbColor: AppColors.slate200,
-              inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
-            ),
-          ),
-        ],
       ),
     );
   }

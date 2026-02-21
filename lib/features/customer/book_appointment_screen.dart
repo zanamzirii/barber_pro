@@ -334,8 +334,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       builder: (context, snapshot) {
         final currentUid = FirebaseAuth.instance.currentUser?.uid;
         final docs = (snapshot.data?.docs ?? const []).where((d) {
-          if (currentUid == null) return true;
           final data = d.data();
+          if (_isVacationActiveNow(data)) return false;
+          if (currentUid == null) return true;
           final barberId = (data['barberId'] as String?)?.trim();
           final barberUserId = (data['barberUserId'] as String?)?.trim();
           return d.id != currentUid &&
@@ -941,6 +942,24 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     if (period == 'PM' && hour != 12) hour += 12;
     if (period == 'AM' && hour == 12) hour = 0;
     return (hour, minute);
+  }
+
+  DateTime? _asDateTime(dynamic raw) {
+    if (raw is Timestamp) return raw.toDate();
+    if (raw is String) return DateTime.tryParse(raw);
+    return null;
+  }
+
+  bool _isVacationActiveNow(Map<String, dynamic> data) {
+    if (data['vacationMode'] != true) return false;
+    final start = _asDateTime(data['vacationStartAt']);
+    final end = _asDateTime(data['vacationEndAt']);
+    final now = DateTime.now();
+
+    if (start == null && end == null) return true;
+    if (start != null && now.isBefore(start)) return false;
+    if (end != null && now.isAfter(end)) return false;
+    return true;
   }
 
   String _formatPrice(double value) {
